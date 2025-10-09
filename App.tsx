@@ -7,7 +7,7 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
-import { LoginScreen, TasksScreen, RewardsScreen, FamilyScreen } from './src/screens';
+import { LoginScreen, TasksScreen, RewardsScreen, FamilyScreen, FamilySetupScreen } from './src/screens';
 import { authService } from './src/services/authService';
 import { User } from './src/types';
 import { supabase } from './src/services/supabase';
@@ -55,10 +55,14 @@ export default function App() {
 
   const loadUserData = async () => {
     try {
+      console.log('Loading user data...');
       const user = await authService.getCurrentUser();
+      console.log('User loaded:', user);
       if (user) {
         setCurrentUser(user);
         await loadFamilyMembers(user.family_id);
+      } else {
+        console.log('No user found');
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -77,6 +81,7 @@ export default function App() {
   };
 
   const handleLoginSuccess = async () => {
+    console.log('Login success triggered, loading user data...');
     await loadUserData();
   };
 
@@ -86,8 +91,22 @@ export default function App() {
     setActiveTab('tasks');
   };
 
+  const handleFamilySetupComplete = async () => {
+    await loadUserData();
+  };
+
   const renderTabContent = () => {
     if (!currentUser) return null;
+
+    // If user doesn't have a family, show family setup
+    if (!currentUser.family_id) {
+      return (
+        <FamilySetupScreen
+          currentUser={currentUser}
+          onFamilyCreated={handleFamilySetupComplete}
+        />
+      );
+    }
 
     switch (activeTab) {
       case 'tasks':
@@ -134,40 +153,43 @@ export default function App() {
         {renderTabContent()}
       </View>
 
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'tasks' && styles.activeTab]}
-          onPress={() => setActiveTab('tasks')}
-        >
-          <Text
-            style={[styles.tabText, activeTab === 'tasks' && styles.activeTabText]}
+      {/* Only show tab bar if user has a family */}
+      {currentUser?.family_id && (
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'tasks' && styles.activeTab]}
+            onPress={() => setActiveTab('tasks')}
           >
-            Uppgifter
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={[styles.tabText, activeTab === 'tasks' && styles.activeTabText]}
+            >
+              Uppgifter
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'rewards' && styles.activeTab]}
-          onPress={() => setActiveTab('rewards')}
-        >
-          <Text
-            style={[styles.tabText, activeTab === 'rewards' && styles.activeTabText]}
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'rewards' && styles.activeTab]}
+            onPress={() => setActiveTab('rewards')}
           >
-            Belöningar
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={[styles.tabText, activeTab === 'rewards' && styles.activeTabText]}
+            >
+              Belöningar
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'family' && styles.activeTab]}
-          onPress={() => setActiveTab('family')}
-        >
-          <Text
-            style={[styles.tabText, activeTab === 'family' && styles.activeTabText]}
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'family' && styles.activeTab]}
+            onPress={() => setActiveTab('family')}
           >
-            Familj
-          </Text>
-        </TouchableOpacity>
-      </View>
+            <Text
+              style={[styles.tabText, activeTab === 'family' && styles.activeTabText]}
+            >
+              Familj
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <StatusBar style="dark" />
     </SafeAreaView>

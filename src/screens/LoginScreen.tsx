@@ -42,11 +42,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          // Handle specific error cases
+          if (error.message.includes('already registered')) {
+            Alert.alert(
+              'User Already Exists',
+              'This email is already registered. Try logging in instead.',
+              [{ text: 'OK', onPress: () => setIsSignUp(false) }]
+            );
+            return;
+          }
+          throw error;
+        }
 
+        // For development - skip email verification
+        // In production, email verification should be used
         Alert.alert(
-          'Registrering lyckades!',
-          'Kontrollera din e-post för att verifiera ditt konto.',
+          'Registration Successful!',
+          'You can now log in with your account.',
+          [{ text: 'OK', onPress: () => setIsSignUp(false) }]
         );
       } else {
         const { error } = await supabase.auth.signInWithPassword({

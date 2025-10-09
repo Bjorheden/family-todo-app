@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { User, Family } from '../types';
 
 export class AuthService {
-  // Registrera ny användare
+  // Register new user
   static async signUp(email: string, password: string, fullName: string): Promise<User> {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -15,9 +15,9 @@ export class AuthService {
     });
 
     if (authError) throw authError;
-    if (!authData.user) throw new Error('Användaren kunde inte skapas');
+    if (!authData.user) throw new Error('User could not be created');
 
-    // Skapa användarprofil
+    // Create user profile
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert([{
@@ -34,7 +34,7 @@ export class AuthService {
     return userData;
   }
 
-  // Logga in
+  // Sign in user
   static async signIn(email: string, password: string): Promise<User> {
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -42,37 +42,51 @@ export class AuthService {
     });
 
     if (authError) throw authError;
-    if (!authData.user) throw new Error('Inloggning misslyckades');
+    if (!authData.user) throw new Error('Login failed');
 
     const user = await this.getCurrentUser();
-    if (!user) throw new Error('Användarprofil hittades inte');
+    if (!user) throw new Error('User profile not found');
 
     return user;
   }
 
-  // Logga ut
+  // Sign out user
   static async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   }
 
-  // Hämta aktuell användare
+  // Get current user
   static async getCurrentUser(): Promise<User | null> {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     
-    if (!authUser) return null;
+    console.log('Auth user:', authUser);
+    if (!authUser) {
+      console.log('No auth user found');
+      return null;
+    }
 
+    console.log('Querying users table for ID:', authUser.id);
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', authUser.id)
       .single();
 
+    console.log('User profile data:', data);
+    console.log('User profile error:', error);
+    
+    if (error) {
+      console.log('Error code:', error.code);
+      console.log('Error message:', error.message);
+      console.log('Error details:', error.details);
+    }
+    
     if (error) return null;
     return data;
   }
 
-  // Skapa familj (endast admin)
+  // Create family (admin only)
   static async createFamily(name: string, adminId: string): Promise<Family> {
     const { data, error } = await supabase
       .from('families')
@@ -85,7 +99,7 @@ export class AuthService {
 
     if (error) throw error;
 
-    // Uppdatera användarens familj-ID och roll
+    // Update user's family ID and role
     await supabase
       .from('users')
       .update({
@@ -97,7 +111,7 @@ export class AuthService {
     return data;
   }
 
-  // Gå med i familj
+  // Join family
   static async joinFamily(familyId: string, userId: string): Promise<void> {
     const { error } = await supabase
       .from('users')
@@ -110,19 +124,19 @@ export class AuthService {
     if (error) throw error;
   }
 
-  // Hämta familjemedlemmar
+  // Get family members
   static async getFamilyMembers(familyId: string): Promise<User[]> {
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('family_id', familyId)
-      .order('role', { ascending: false }); // Admin först
+      .order('role', { ascending: false }); // Admin first
 
     if (error) throw error;
     return data || [];
   }
 
-  // Hämta familj
+  // Get family
   static async getFamily(familyId: string): Promise<Family | null> {
     const { data, error } = await supabase
       .from('families')

@@ -1,4 +1,4 @@
--- Skapa familjetabell
+-- Create families table
 CREATE TABLE families (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
@@ -6,7 +6,7 @@ CREATE TABLE families (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Skapa användartabell
+-- Create users table
 CREATE TABLE users (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE users (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Skapa uppgiftstabell
+-- Create tasks table
 CREATE TABLE tasks (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   title TEXT NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE tasks (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Skapa belöningstabell
+-- Create rewards table
 CREATE TABLE rewards (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   title TEXT NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE rewards (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Skapa notifieringstabell
+-- Create notifications table
 CREATE TABLE notifications (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -60,7 +60,7 @@ CREATE TABLE notifications (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Skapa belöningsanspråkstabell
+-- Create reward claims table
 CREATE TABLE reward_claims (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -70,7 +70,7 @@ CREATE TABLE reward_claims (
   processed_at TIMESTAMP WITH TIME ZONE
 );
 
--- Skapa funktion för att lägga till poäng
+-- Create function to add points to user
 CREATE OR REPLACE FUNCTION add_user_points(user_id UUID, points_to_add INTEGER)
 RETURNS VOID AS $$
 BEGIN
@@ -80,7 +80,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Skapa RLS-policies
+-- Enable RLS on all tables
 ALTER TABLE families ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
@@ -88,19 +88,19 @@ ALTER TABLE rewards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reward_claims ENABLE ROW LEVEL SECURITY;
 
--- Policies för users
+-- Policies for users table
 CREATE POLICY "Users can view own profile" ON users FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can view family members" ON users FOR SELECT USING (
   family_id IN (SELECT family_id FROM users WHERE id = auth.uid())
 );
 
--- Policies för families
+-- Policies for families table
 CREATE POLICY "Family members can view family" ON families FOR SELECT USING (
   id IN (SELECT family_id FROM users WHERE id = auth.uid())
 );
 
--- Policies för tasks
+-- Policies for tasks table
 CREATE POLICY "Family members can view family tasks" ON tasks FOR SELECT USING (
   family_id IN (SELECT family_id FROM users WHERE id = auth.uid())
 );
@@ -111,23 +111,23 @@ CREATE POLICY "Users can update own tasks" ON tasks FOR UPDATE USING (
   assigned_to = auth.uid() OR created_by = auth.uid()
 );
 
--- Policies för rewards
+-- Policies for rewards table
 CREATE POLICY "Family members can view family rewards" ON rewards FOR SELECT USING (
   family_id IN (SELECT family_id FROM users WHERE id = auth.uid())
 );
 
--- Policies för notifications
+-- Policies for notifications table
 CREATE POLICY "Users can view own notifications" ON notifications FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "Users can update own notifications" ON notifications FOR UPDATE USING (user_id = auth.uid());
 
--- Policies för reward_claims
+-- Policies for reward_claims table
 CREATE POLICY "Users can view own reward claims" ON reward_claims FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "Users can insert own reward claims" ON reward_claims FOR INSERT WITH CHECK (user_id = auth.uid());
 
--- Lägg till policy för att skapa användarprofiler
+-- Add policy for creating user profiles
 CREATE POLICY "Users can insert own profile" ON users FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Skapa trigger för att automatiskt skapa användarprofil vid registrering
+-- Create trigger to automatically create user profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -143,7 +143,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Skapa trigger som körs när ny användare registrerar sig
+-- Create trigger that runs when new user signs up
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
