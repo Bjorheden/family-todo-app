@@ -68,9 +68,12 @@ export class TaskService {
     // Om uppgiften markeras som slutförd, notifiera admin
     if (status === 'completed') {
       await this.createTaskNotification(data.created_by, taskId, 'task_completed');
-      
-      // Lägg till poäng till användaren
-      await this.addPointsToUser(userId, data.points);
+    }
+
+    // Om uppgiften godkänns av admin, lägg till poäng till användaren
+    if (status === 'approved') {
+      await this.addPointsToUser(data.assigned_to, data.points);
+      await this.createTaskNotification(data.assigned_to, taskId, 'task_approved');
     }
 
     return data;
@@ -90,16 +93,23 @@ export class TaskService {
   private static async createTaskNotification(
     userId: string, 
     taskId: string, 
-    type: 'task_assigned' | 'task_completed'
+    type: 'task_assigned' | 'task_completed' | 'task_approved'
   ): Promise<void> {
     const messages = {
       task_assigned: 'Du har fått en ny uppgift!',
-      task_completed: 'En uppgift har markerats som slutförd!'
+      task_completed: 'En uppgift har markerats som slutförd!',
+      task_approved: 'Din uppgift har godkänts! Du har fått poäng.'
+    };
+
+    const titles = {
+      task_assigned: 'Ny uppgift',
+      task_completed: 'Uppgift slutförd',
+      task_approved: 'Uppgift godkänd'
     };
 
     const notification: Omit<Notification, 'id' | 'created_at'> = {
       user_id: userId,
-      title: type === 'task_assigned' ? 'Ny uppgift' : 'Uppgift slutförd',
+      title: titles[type],
       message: messages[type],
       type,
       is_read: false,

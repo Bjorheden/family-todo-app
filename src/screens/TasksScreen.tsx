@@ -71,6 +71,8 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
       task={item}
       onPress={() => handleTaskPress(item)}
       onStatusChange={handleStatusChange}
+      currentUserId={currentUser.id}
+      isAdmin={currentUser.role === 'admin'}
     />
   );
 

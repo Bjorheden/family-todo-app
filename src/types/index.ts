@@ -52,7 +52,7 @@ export interface Notification {
   user_id: string;
   title: string;
   message: string;
-  type: 'task_completed' | 'task_assigned' | 'reward_claimed' | 'general';
+  type: 'task_completed' | 'task_assigned' | 'task_approved' | 'reward_claimed' | 'general';
   is_read: boolean;
   related_task_id?: string;
   related_reward_id?: string;
