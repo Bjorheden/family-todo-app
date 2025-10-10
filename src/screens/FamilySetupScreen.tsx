@@ -52,11 +52,11 @@ export const FamilySetupScreen: React.FC<FamilySetupScreenProps> = ({
 
     setLoading(true);
     try {
-      await authService.joinFamily(familyCode.trim(), currentUser.id);
+      await authService.joinFamilyByCode(familyCode.trim(), currentUser.id);
       Alert.alert('Success!', 'Joined family successfully!');
       onFamilyCreated();
     } catch (error: any) {
-      Alert.alert('Error', 'Family not found or invalid code');
+      Alert.alert('Error', error.message || 'Failed to join family');
     } finally {
       setLoading(false);
     }
@@ -139,7 +139,7 @@ export const FamilySetupScreen: React.FC<FamilySetupScreenProps> = ({
             </TouchableOpacity>
             
             <Text style={styles.helpText}>
-              Ask your family administrator for the invitation code
+              Ask your family administrator to share the family code from the Family tab → "Family Code" button
             </Text>
           </View>
         )}

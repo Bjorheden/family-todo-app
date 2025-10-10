@@ -28,7 +28,12 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
 
   const loadFamilyMembers = async () => {
     try {
-      if (!currentUser.family_id) return;
+      if (!currentUser.family_id) {
+        console.log('No family_id found for current user');
+        return;
+      }
+
+      console.log('Loading family members for family_id:', currentUser.family_id);
 
       const { data, error } = await supabase
         .from('users')
@@ -36,7 +41,12 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
         .eq('family_id', currentUser.family_id)
         .order('points', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error loading family members:', error);
+        throw error;
+      }
+      
+      console.log('Family members loaded:', data);
       setFamilyMembers(data || []);
     } catch (error) {
       console.error('Error loading family members:', error);
@@ -74,6 +84,22 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
     } catch (error) {
       console.error('Error logging out:', error);
     }
+  };
+
+  const handleShowInviteCode = () => {
+    if (!currentUser.family_id) return;
+    
+    Alert.alert(
+      'Family Invitation Code',
+      `Share this code with family members to join:\n\n${currentUser.family_id}\n\nThey can use this code in the "Join Family" option when setting up the app.`,
+      [
+        { text: 'Copy Code', onPress: () => {
+          // In a real app, you'd copy to clipboard here
+          console.log('Family code:', currentUser.family_id);
+        }},
+        { text: 'OK' }
+      ]
+    );
   };
 
   const handleInviteMember = async () => {
@@ -118,12 +144,20 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
         <Text style={styles.title}>Min Familj</Text>
         <View style={styles.headerButtons}>
           {currentUser.role === 'admin' && (
-            <TouchableOpacity
-              style={styles.inviteButton}
-              onPress={() => setShowInviteModal(true)}
-            >
-              <Text style={styles.inviteButtonText}>Bjud in</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.codeButton}
+                onPress={handleShowInviteCode}
+              >
+                <Text style={styles.codeButtonText}>Family Code</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.inviteButton}
+                onPress={() => setShowInviteModal(true)}
+              >
+                <Text style={styles.inviteButtonText}>Bjud in</Text>
+              </TouchableOpacity>
+            </>
           )}
           <TouchableOpacity
             style={styles.logoutButton}
@@ -213,6 +247,17 @@ const styles = StyleSheet.create({
   headerButtons: {
     flexDirection: 'row',
     gap: 8,
+  },
+  codeButton: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  codeButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   inviteButton: {
     backgroundColor: '#6200EA',

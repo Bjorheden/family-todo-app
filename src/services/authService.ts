@@ -111,7 +111,61 @@ export class AuthService {
     return data;
   }
 
-  // Join family
+  // Find family by invitation code (using family ID as code for now)
+  static async findFamilyByCode(familyCode: string): Promise<Family | null> {
+    console.log('Looking for family with code:', familyCode);
+    
+    // For now, we'll use the family ID as the invitation code
+    // In a production app, you might want a separate invitation_code field
+    const { data, error } = await supabase
+      .from('families')
+      .select('*')
+      .eq('id', familyCode)
+      .single();
+
+    console.log('Family search result:', { data, error });
+    
+    if (error) {
+      console.error('Error finding family:', error);
+      return null;
+    }
+    return data;
+  }
+
+  // Join family by invitation code
+  static async joinFamilyByCode(familyCode: string, userId: string): Promise<void> {
+    console.log('Attempting to join family with code:', familyCode);
+    
+    // Check if user is already in a family
+    const currentUser = await this.getCurrentUser();
+    if (currentUser?.family_id) {
+      throw new Error('You are already a member of a family. Please leave your current family first.');
+    }
+
+    // Try to join the family directly (the family ID is the code)
+    // We'll let the database constraints and policies handle validation
+    try {
+      await this.joinFamily(familyCode, userId);
+      console.log('Successfully joined family');
+      
+      // Verify the join worked by checking if we can now see the family
+      const updatedUser = await this.getCurrentUser();
+      if (!updatedUser?.family_id) {
+        throw new Error('Family join failed - family may not exist or you may not have permission');
+      }
+    } catch (error: any) {
+      console.error('Join family error:', error);
+      
+      // Provide more user-friendly error messages
+      if (error.message.includes('foreign key')) {
+        throw new Error('Family not found. Please check the invitation code.');
+      }
+      
+      throw error;
+    }
+  }
+
+  // Join family (internal function)
   static async joinFamily(familyId: string, userId: string): Promise<void> {
     const { error } = await supabase
       .from('users')
