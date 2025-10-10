@@ -38,9 +38,7 @@ export class TaskService {
 
     // Create notification for the assigned user
     try {
-      console.log('Creating notification for user:', task.assigned_to, 'task:', data.id);
       await this.createTaskNotification(task.assigned_to, data.id, 'task_assigned');
-      console.log('Notification created successfully');
     } catch (error) {
       console.error('Failed to create task assignment notification:', error);
     }
@@ -122,8 +120,6 @@ export class TaskService {
       related_task_id: taskId
     };
 
-    console.log('Inserting notification:', notification);
-    
     const { data, error } = await supabase
       .from('notifications')
       .insert([notification])
@@ -132,9 +128,9 @@ export class TaskService {
     if (error) {
       console.error('Failed to create notification:', error);
       throw error;
-    } else {
-      console.log('Notification inserted successfully:', data);
     }
+    
+    console.log(`✅ Notification sent: "${titles[type]}" to user`);
   }
 
   // Delete task (admin only)

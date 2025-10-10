@@ -33,8 +33,6 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
         return;
       }
 
-      console.log('Loading family members for family_id:', currentUser.family_id);
-
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -46,7 +44,6 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
         throw error;
       }
       
-      console.log('Family members loaded:', data);
       setFamilyMembers(data || []);
     } catch (error) {
       console.error('Error loading family members:', error);

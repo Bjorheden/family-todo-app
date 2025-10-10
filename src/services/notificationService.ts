@@ -5,7 +5,6 @@ import { Notification } from '../types';
 export class NotificationService {
   // Get notifications for current user
   static async getUserNotifications(userId: string): Promise<Notification[]> {
-    console.log('Fetching notifications for user:', userId);
     
     const { data, error } = await supabase
       .from('notifications')
@@ -18,7 +17,6 @@ export class NotificationService {
       throw error;
     }
 
-    console.log('Notifications fetched:', data);
     return data || [];
   }
 

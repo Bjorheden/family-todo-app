@@ -47,7 +47,6 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
 
   const handleTaskPress = (task: Task) => {
     // TODO: Navigate to task details
-    console.log('Task pressed:', task.title);
   };
 
   const handleStatusChange = async (taskId: string, status: Task['status']) => {
@@ -62,9 +61,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
 
   const handleDeleteTask = async (taskId: string) => {
     try {
-      console.log('Attempting to delete task:', taskId);
       await taskService.deleteTask(taskId);
-      console.log('Task deleted successfully, reloading tasks...');
       loadTasks(); // Reload tasks after deletion
     } catch (error: any) {
       console.error('Error deleting task:', error);

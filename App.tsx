@@ -64,9 +64,7 @@ export default function App() {
 
   const loadUserData = async () => {
     try {
-      console.log('Loading user data...');
       const user = await authService.getCurrentUser();
-      console.log('User loaded:', user);
       if (user) {
         setCurrentUser(user);
         await loadFamilyMembers(user.family_id);
@@ -81,15 +79,11 @@ export default function App() {
 
   const loadNotificationCount = async (userId: string) => {
     try {
-      console.log('Loading notification count for user:', userId);
       const count = await notificationService.getUnreadCount(userId);
-      console.log('Unread notification count:', count);
       setNotificationCount(count);
       
       // Also log total notifications for debugging
       const allNotifications = await notificationService.getUserNotifications(userId);
-      console.log('Total notifications for user:', allNotifications.length);
-      console.log('All notifications:', allNotifications);
     } catch (error) {
       console.error('Error loading notification count:', error);
     }
@@ -107,7 +101,6 @@ export default function App() {
   };
 
   const handleLoginSuccess = async () => {
-    console.log('Login success triggered, loading user data...');
     await loadUserData();
   };
 
@@ -141,7 +134,6 @@ export default function App() {
             currentUser={currentUser}
             familyMembers={familyMembers}
             onTaskCreated={async () => {
-              console.log('Task created/updated, refreshing notifications...');
               await loadNotificationCount(currentUser.id);
             }}
           />
@@ -194,7 +186,6 @@ export default function App() {
               <TouchableOpacity 
                 style={styles.refreshButton}
                 onPress={async () => {
-                  console.log('Refresh button pressed!');
                   await loadNotificationCount(currentUser.id);
                 }}
               >
@@ -203,11 +194,8 @@ export default function App() {
               <TouchableOpacity 
                 style={styles.viewButton}
                 onPress={async () => {
-                  console.log('View button pressed!');
                   try {
-                    console.log('Fetching notifications for user:', currentUser.id);
                     const userNotifications = await notificationService.getUserNotifications(currentUser.id);
-                    console.log('Fetched notifications:', userNotifications);
                     setNotifications(userNotifications);
                     setShowNotifications(true);
                   } catch (error) {
@@ -280,7 +268,6 @@ export default function App() {
                 <TouchableOpacity 
                   onPress={async () => {
                     try {
-                      console.log('Marking all notifications as read...');
                       // Mark all unread notifications as read
                       const unreadNotifications = notifications.filter(n => !n.is_read);
                       
@@ -295,7 +282,6 @@ export default function App() {
                       
                       // Refresh notification count
                       await loadNotificationCount(currentUser!.id);
-                      console.log('All notifications marked as read');
                     } catch (error) {
                       console.error('Error marking all notifications as read:', error);
                     }
@@ -320,7 +306,6 @@ export default function App() {
                 onPress={async () => {
                   if (!item.is_read) {
                     try {
-                      console.log('Marking notification as read:', item.id);
                       await notificationService.markAsRead(item.id);
                       
                       // Update local state
@@ -332,7 +317,6 @@ export default function App() {
                       
                       // Refresh notification count
                       await loadNotificationCount(currentUser!.id);
-                      console.log('Notification marked as read successfully');
                     } catch (error) {
                       console.error('Error marking notification as read:', error);
                     }

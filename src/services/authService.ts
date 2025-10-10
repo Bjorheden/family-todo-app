@@ -60,21 +60,16 @@ export class AuthService {
   static async getCurrentUser(): Promise<User | null> {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     
-    console.log('Auth user:', authUser);
     if (!authUser) {
       console.log('No auth user found');
       return null;
     }
 
-    console.log('Querying users table for ID:', authUser.id);
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', authUser.id)
       .single();
-
-    console.log('User profile data:', data);
-    console.log('User profile error:', error);
     
     if (error) {
       console.log('Error code:', error.code);
@@ -113,7 +108,6 @@ export class AuthService {
 
   // Find family by invitation code (using family ID as code for now)
   static async findFamilyByCode(familyCode: string): Promise<Family | null> {
-    console.log('Looking for family with code:', familyCode);
     
     // For now, we'll use the family ID as the invitation code
     // In a production app, you might want a separate invitation_code field
@@ -122,8 +116,6 @@ export class AuthService {
       .select('*')
       .eq('id', familyCode)
       .single();
-
-    console.log('Family search result:', { data, error });
     
     if (error) {
       console.error('Error finding family:', error);
@@ -133,9 +125,7 @@ export class AuthService {
   }
 
   // Join family by invitation code
-  static async joinFamilyByCode(familyCode: string, userId: string): Promise<void> {
-    console.log('Attempting to join family with code:', familyCode);
-    
+  static async joinFamilyByCode(familyCode: string, userId: string): Promise<void> {    
     // Check if user is already in a family
     const currentUser = await this.getCurrentUser();
     if (currentUser?.family_id) {
@@ -145,9 +135,7 @@ export class AuthService {
     // Try to join the family directly (the family ID is the code)
     // We'll let the database constraints and policies handle validation
     try {
-      await this.joinFamily(familyCode, userId);
-      console.log('Successfully joined family');
-      
+      await this.joinFamily(familyCode, userId);      
       // Verify the join worked by checking if we can now see the family
       const updatedUser = await this.getCurrentUser();
       if (!updatedUser?.family_id) {
