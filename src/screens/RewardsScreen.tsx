@@ -13,9 +13,10 @@ import { supabase } from '../services/supabase';
 
 interface RewardsScreenProps {
   currentUser: User;
+  onUserDataUpdate: () => Promise<void>;
 }
 
-export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser }) => {
+export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser, onUserDataUpdate }) => {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,11 +42,15 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser }) => 
 
   useEffect(() => {
     loadRewards();
+    onUserDataUpdate(); // Refresh user data to get current points
   }, []);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    loadRewards();
+    await Promise.all([
+      loadRewards(),
+      onUserDataUpdate() // Refresh user data to get updated points
+    ]);
   };
 
   const handleRewardPress = (reward: Reward) => {

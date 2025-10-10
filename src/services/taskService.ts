@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { Task, Notification } from '../types';
 
 export class TaskService {
-  // Hämta alla uppgifter för en familj
+  // Get all tasks for a family
   static async getFamilyTasks(familyId: string): Promise<Task[]> {
     const { data, error } = await supabase
       .from('tasks')
@@ -14,7 +14,7 @@ export class TaskService {
     return data || [];
   }
 
-  // Hämta uppgifter tilldelade till en specifik användare
+  // Get tasks assigned to a specific user
   static async getUserTasks(userId: string): Promise<Task[]> {
     const { data, error } = await supabase
       .from('tasks')
@@ -26,7 +26,7 @@ export class TaskService {
     return data || [];
   }
 
-  // Skapa ny uppgift (endast admin)
+  // Create new task (admin only)
   static async createTask(task: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<Task> {
     const { data, error } = await supabase
       .from('tasks')
@@ -36,13 +36,19 @@ export class TaskService {
 
     if (error) throw error;
 
-    // Skapa notifiering till den tilldelade användaren
-    await this.createTaskNotification(task.assigned_to, data.id, 'task_assigned');
+    // Create notification for the assigned user
+    try {
+      console.log('Creating notification for user:', task.assigned_to, 'task:', data.id);
+      await this.createTaskNotification(task.assigned_to, data.id, 'task_assigned');
+      console.log('Notification created successfully');
+    } catch (error) {
+      console.error('Failed to create task assignment notification:', error);
+    }
 
     return data;
   }
 
-  // Uppdatera uppgiftsstatus
+  // Update task status
   static async updateTaskStatus(taskId: string, status: Task['status'], userId: string): Promise<Task> {
     const updateData: any = { 
       status,
@@ -65,12 +71,12 @@ export class TaskService {
 
     if (error) throw error;
 
-    // Om uppgiften markeras som slutförd, notifiera admin
+    // If task is marked as completed, notify admin
     if (status === 'completed') {
       await this.createTaskNotification(data.created_by, taskId, 'task_completed');
     }
 
-    // Om uppgiften godkänns av admin, lägg till poäng till användaren
+    // If task is approved by admin, add points to user
     if (status === 'approved') {
       await this.addPointsToUser(data.assigned_to, data.points);
       await this.createTaskNotification(data.assigned_to, taskId, 'task_approved');
@@ -79,7 +85,7 @@ export class TaskService {
     return data;
   }
 
-  // Lägg till poäng till användare
+  // Add points to user
   private static async addPointsToUser(userId: string, points: number): Promise<void> {
     const { error } = await supabase.rpc('add_user_points', {
       user_id: userId,
@@ -89,22 +95,22 @@ export class TaskService {
     if (error) throw error;
   }
 
-  // Skapa notifiering
+  // Create notification
   private static async createTaskNotification(
     userId: string, 
     taskId: string, 
     type: 'task_assigned' | 'task_completed' | 'task_approved'
   ): Promise<void> {
     const messages = {
-      task_assigned: 'Du har fått en ny uppgift!',
-      task_completed: 'En uppgift har markerats som slutförd!',
-      task_approved: 'Din uppgift har godkänts! Du har fått poäng.'
+      task_assigned: 'You have received a new task!',
+      task_completed: 'A task has been marked as completed!',
+      task_approved: 'Your task has been approved! You have received points.'
     };
 
     const titles = {
-      task_assigned: 'Ny uppgift',
-      task_completed: 'Uppgift slutförd',
-      task_approved: 'Uppgift godkänd'
+      task_assigned: 'New Task',
+      task_completed: 'Task Completed',
+      task_approved: 'Task Approved'
     };
 
     const notification: Omit<Notification, 'id' | 'created_at'> = {
@@ -116,14 +122,22 @@ export class TaskService {
       related_task_id: taskId
     };
 
-    const { error } = await supabase
+    console.log('Inserting notification:', notification);
+    
+    const { data, error } = await supabase
       .from('notifications')
-      .insert([notification]);
+      .insert([notification])
+      .select();
 
-    if (error) console.error('Failed to create notification:', error);
+    if (error) {
+      console.error('Failed to create notification:', error);
+      throw error;
+    } else {
+      console.log('Notification inserted successfully:', data);
+    }
   }
 
-  // Ta bort uppgift (endast admin)
+  // Delete task (admin only)
   static async deleteTask(taskId: string): Promise<void> {
     const { error } = await supabase
       .from('tasks')

@@ -14,9 +14,10 @@ import { taskService } from '../services/taskService';
 interface TasksScreenProps {
   currentUser: User;
   familyMembers: User[];
+  onTaskCreated?: () => void;
 }
 
-export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMembers }) => {
+export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMembers, onTaskCreated }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,6 +53,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
     try {
       await taskService.updateTaskStatus(taskId, status, currentUser.id);
       loadTasks(); // Reload tasks
+      onTaskCreated?.(); // Notify parent to refresh notifications (status changes can create notifications too)
     } catch (error) {
       console.error('Error updating task status:', error);
     }
@@ -61,6 +63,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
     try {
       await taskService.createTask(taskData);
       loadTasks(); // Reload tasks
+      onTaskCreated?.(); // Notify parent to refresh notifications
     } catch (error) {
       console.error('Error creating task:', error);
     }

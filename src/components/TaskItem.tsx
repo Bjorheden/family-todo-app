@@ -29,11 +29,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
   const getStatusText = () => {
     switch (task.status) {
-      case 'pending': return 'Väntande';
-      case 'in_progress': return 'Pågår';
-      case 'completed': return 'Klar';
-      case 'approved': return 'Godkänd';
-      default: return 'Okänd';
+      case 'pending': return 'Pending';
+      case 'in_progress': return 'In Progress';
+      case 'completed': return 'Complete';
+      case 'approved': return 'Approved';
+      default: return 'Unknown';
     }
   };
 
@@ -50,11 +50,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
   const handleCompleteTask = () => {
     Alert.alert(
-      'Slutför uppgift',
-      'Är du säker på att du har slutfört denna uppgift?',
+      'Complete Task',
+      'Are you sure you have completed this task?',
       [
-        { text: 'Avbryt', style: 'cancel' },
-        { text: 'Slutför', onPress: () => onStatusChange(task.id, 'completed') }
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Complete', onPress: () => onStatusChange(task.id, 'completed') }
       ]
     );
   };
@@ -94,23 +94,23 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
     return (
       <View style={styles.actionButtons}>
-        {showStart && (
+        {showStart ? (
           <TouchableOpacity style={styles.startButton} onPress={handleStartTask}>
             <Text style={styles.buttonText}>Starta</Text>
           </TouchableOpacity>
-        )}
+        ) : null}
         
-        {showComplete && (
+        {showComplete ? (
           <TouchableOpacity style={styles.completeButton} onPress={handleCompleteTask}>
-            <Text style={styles.buttonText}>Slutför</Text>
+            <Text style={styles.buttonText}>Complete</Text>
           </TouchableOpacity>
-        )}
+        ) : null}
         
-        {showApprove && (
+        {showApprove ? (
           <TouchableOpacity style={styles.approveButton} onPress={handleApproveTask}>
             <Text style={styles.buttonText}>Godkänn</Text>
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
     );
   };
@@ -118,21 +118,21 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.content}>
-        <Text style={styles.title}>{task.title}</Text>
-        {task.description && (
+        <Text style={styles.title}>{task.title || 'Unnamed Task'}</Text>
+        {task.description ? (
           <Text style={styles.description}>{task.description}</Text>
-        )}
+        ) : null}
         <View style={styles.footer}>
           <View style={[styles.status, { backgroundColor: getStatusColor() }]}>
             <Text style={styles.statusText}>{getStatusText()}</Text>
           </View>
-          <Text style={styles.points}>{task.points} poäng</Text>
+          <Text style={styles.points}>{task.points || 0} points</Text>
         </View>
-        {task.due_date && (
+        {task.due_date ? (
           <Text style={styles.dueDate}>
-            Förfaller: {new Date(task.due_date).toLocaleDateString('sv-SE')}
+            Due: {new Date(task.due_date).toLocaleDateString()}
           </Text>
-        )}
+        ) : null}
         {renderActionButtons()}
       </View>
     </TouchableOpacity>
@@ -193,25 +193,27 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     marginTop: 12,
-    gap: 8,
   },
   startButton: {
     backgroundColor: '#42A5F5',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
+    marginRight: 8,
   },
   completeButton: {
     backgroundColor: '#66BB6A',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
+    marginRight: 8,
   },
   approveButton: {
     backgroundColor: '#4CAF50',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
+    marginRight: 8,
   },
   buttonText: {
     color: '#fff',
