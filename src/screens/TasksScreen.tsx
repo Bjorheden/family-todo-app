@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { TaskItem, CreateTaskModal } from '../components';
 import { Task, User } from '../types';
@@ -59,6 +60,18 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
     }
   };
 
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      console.log('Attempting to delete task:', taskId);
+      await taskService.deleteTask(taskId);
+      console.log('Task deleted successfully, reloading tasks...');
+      loadTasks(); // Reload tasks after deletion
+    } catch (error: any) {
+      console.error('Error deleting task:', error);
+      Alert.alert('Error', `Failed to delete task: ${error.message || 'Unknown error'}`);
+    }
+  };
+
   const handleCreateTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'completed_at' | 'approved_at'>) => {
     try {
       await taskService.createTask(taskData);
@@ -74,6 +87,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
       task={item}
       onPress={() => handleTaskPress(item)}
       onStatusChange={handleStatusChange}
+      onDelete={handleDeleteTask}
       currentUserId={currentUser.id}
       isAdmin={currentUser.role === 'admin'}
     />

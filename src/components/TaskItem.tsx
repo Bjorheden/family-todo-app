@@ -6,6 +6,7 @@ interface TaskItemProps {
   task: Task;
   onPress: () => void;
   onStatusChange: (taskId: string, status: Task['status']) => void;
+  onDelete?: (taskId: string) => void;
   currentUserId: string;
   isAdmin: boolean;
 }
@@ -14,6 +15,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   task, 
   onPress, 
   onStatusChange, 
+  onDelete,
   currentUserId, 
   isAdmin 
 }) => {
@@ -70,6 +72,21 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     );
   };
 
+  const handleDeleteTask = () => {
+    Alert.alert(
+      'Delete Task',
+      'Are you sure you want to delete this task? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => onDelete?.(task.id) 
+        }
+      ]
+    );
+  };
+
   const canStartTask = () => {
     return task.assigned_to === currentUserId && task.status === 'pending';
   };
@@ -82,13 +99,18 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     return isAdmin && task.status === 'completed';
   };
 
+  const canDeleteTask = () => {
+    return isAdmin && onDelete; // Admin can delete any task if delete function is provided
+  };
+
   const renderActionButtons = () => {
     const showStart = canStartTask();
     const showComplete = canCompleteTask();
     const showApprove = canApproveTask();
+    const showDelete = canDeleteTask();
 
     // Only render the container if there are buttons to show
-    if (!showStart && !showComplete && !showApprove) {
+    if (!showStart && !showComplete && !showApprove && !showDelete) {
       return null;
     }
 
@@ -109,6 +131,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({
         {showApprove ? (
           <TouchableOpacity style={styles.approveButton} onPress={handleApproveTask}>
             <Text style={styles.buttonText}>Godkänn</Text>
+          </TouchableOpacity>
+        ) : null}
+        
+        {showDelete ? (
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteTask}>
+            <Text style={styles.buttonText}>Delete</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -210,6 +238,13 @@ const styles = StyleSheet.create({
   },
   approveButton: {
     backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  deleteButton: {
+    backgroundColor: '#F44336',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,

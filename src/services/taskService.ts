@@ -138,13 +138,21 @@ export class TaskService {
   }
 
   // Delete task (admin only)
-  static async deleteTask(taskId: string): Promise<void> {
-    const { error } = await supabase
+  static async deleteTask(taskId: string): Promise<void> {    
+    const { data, error } = await supabase
       .from('tasks')
       .delete()
-      .eq('id', taskId);
-
-    if (error) throw error;
+      .eq('id', taskId)
+      .select(); // Add select to see if anything was actually deleted    
+    if (error) {
+      console.error('TaskService: Delete error:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      console.warn('TaskService: No task was deleted - may not exist or no permission');
+      throw new Error('Task could not be deleted. You may not have permission or the task may not exist.');
+    }
   }
 }
 
