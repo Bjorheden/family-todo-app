@@ -101,7 +101,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
         <TextInput
           style={styles.input}
-          placeholder="E-postadress"
+          placeholder="Email address"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"

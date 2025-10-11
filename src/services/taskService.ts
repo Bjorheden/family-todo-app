@@ -26,8 +26,25 @@ export class TaskService {
     return data || [];
   }
 
+  // Get count of tasks pending approval for a family
+  static async getPendingApprovalCount(familyId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('tasks')
+      .select('*', { count: 'exact' })
+      .eq('family_id', familyId)
+      .eq('status', 'completed'); // Tasks completed but not yet approved
+
+    if (error) throw error;
+    return count || 0;
+  }
+
   // Create new task (admin only)
-  static async createTask(task: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<Task> {
+  static async createTask(task: Omit<Task, 'id' | 'created_at' | 'updated_at'>, userRole?: string): Promise<Task> {
+    // Client-side validation: only admins can create tasks
+    if (userRole && userRole !== 'admin') {
+      throw new Error('Only family admins can create tasks');
+    }
+
     const { data, error } = await supabase
       .from('tasks')
       .insert([task])

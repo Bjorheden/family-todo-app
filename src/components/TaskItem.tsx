@@ -41,11 +41,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
   const handleStartTask = () => {
     Alert.alert(
-      'Starta uppgift',
-      'Vill du börja arbeta med denna uppgift?',
+      'Start Task',
+      'Do you want to start working on this task?',
       [
-        { text: 'Avbryt', style: 'cancel' },
-        { text: 'Starta', onPress: () => onStatusChange(task.id, 'in_progress') }
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Start', onPress: () => onStatusChange(task.id, 'in_progress') }
       ]
     );
   };
@@ -63,11 +63,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
   const handleApproveTask = () => {
     Alert.alert(
-      'Godkänn uppgift',
-      'Vill du godkänn denna slutförda uppgift? Användaren kommer att få sina poäng.',
+      'Approve Task',
+      'Do you want to approve this completed task? The user will receive their points.',
       [
-        { text: 'Avbryt', style: 'cancel' },
-        { text: 'Godkänn', onPress: () => onStatusChange(task.id, 'approved') }
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Approve', onPress: () => onStatusChange(task.id, 'approved') }
       ]
     );
   };
@@ -107,10 +107,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     const showStart = canStartTask();
     const showComplete = canCompleteTask();
     const showApprove = canApproveTask();
-    const showDelete = canDeleteTask();
 
     // Only render the container if there are buttons to show
-    if (!showStart && !showComplete && !showApprove && !showDelete) {
+    if (!showStart && !showComplete && !showApprove) {
       return null;
     }
 
@@ -118,7 +117,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
       <View style={styles.actionButtons}>
         {showStart ? (
           <TouchableOpacity style={styles.startButton} onPress={handleStartTask}>
-            <Text style={styles.buttonText}>Starta</Text>
+            <Text style={styles.buttonText}>Start</Text>
           </TouchableOpacity>
         ) : null}
         
@@ -130,13 +129,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
         
         {showApprove ? (
           <TouchableOpacity style={styles.approveButton} onPress={handleApproveTask}>
-            <Text style={styles.buttonText}>Godkänn</Text>
-          </TouchableOpacity>
-        ) : null}
-        
-        {showDelete ? (
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteTask}>
-            <Text style={styles.buttonText}>Delete</Text>
+            <Text style={styles.buttonText}>Approve</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -146,7 +139,14 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.content}>
-        <Text style={styles.title}>{task.title || 'Unnamed Task'}</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>{task.title || 'Unnamed Task'}</Text>
+          {canDeleteTask() && (
+            <TouchableOpacity style={styles.deleteIcon} onPress={handleDeleteTask}>
+              <Text style={styles.deleteIconText}>🗑️</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         {task.description ? (
           <Text style={styles.description}>{task.description}</Text>
         ) : null}
@@ -182,11 +182,26 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 8,
     color: '#333',
+    flex: 1,
+    marginRight: 8,
+  },
+  deleteIcon: {
+    padding: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+  },
+  deleteIconText: {
+    fontSize: 16,
   },
   description: {
     fontSize: 14,
@@ -238,13 +253,6 @@ const styles = StyleSheet.create({
   },
   approveButton: {
     backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-  },
-  deleteButton: {
-    backgroundColor: '#F44336',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,

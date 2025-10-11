@@ -56,17 +56,17 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser, onUse
   const handleRewardPress = (reward: Reward) => {
     if (currentUser.points >= reward.points_required) {
       Alert.alert(
-        'Köp belöning',
-        `Vill du köpa "${reward.title}" för ${reward.points_required} poäng?`,
+        'Claim Reward',
+        `Do you want to claim "${reward.title}" for ${reward.points_required} points?`,
         [
-          { text: 'Avbryt', style: 'cancel' },
-          { text: 'Köp', onPress: () => claimReward(reward) },
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Claim', onPress: () => claimReward(reward) },
         ]
       );
     } else {
       Alert.alert(
-        'Inte tillräckligt med poäng',
-        `Du behöver ${reward.points_required - currentUser.points} poäng till för att köpa denna belöning.`
+        'Not Enough Points',
+        `You need ${reward.points_required - currentUser.points} more points to claim this reward.`
       );
     }
   };
@@ -87,12 +87,12 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser, onUse
       if (error) throw error;
 
       Alert.alert(
-        'Belöning begärd!',
-        'Din begäran om belöning har skickats och väntar på godkännande.'
+        'Reward Claimed!',
+        'Your reward request has been sent and is waiting for approval.'
       );
     } catch (error) {
       console.error('Error claiming reward:', error);
-      Alert.alert('Fel', 'Kunde inte begära belöning. Försök igen.');
+      Alert.alert('Error', 'Could not claim reward. Please try again.');
     }
   };
 
@@ -107,7 +107,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser, onUse
   if (loading) {
     return (
       <View style={styles.centered}>
-        <Text>Laddar belöningar...</Text>
+        <Text>Loading rewards...</Text>
       </View>
     );
   }
@@ -115,9 +115,9 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser, onUse
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Belöningar</Text>
+        <Text style={styles.title}>Rewards</Text>
         <View style={styles.pointsContainer}>
-          <Text style={styles.pointsLabel}>Dina poäng:</Text>
+          <Text style={styles.pointsLabel}>Your points:</Text>
           <Text style={styles.pointsValue}>{currentUser.points}</Text>
         </View>
       </View>
@@ -131,9 +131,9 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser, onUse
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Inga belöningar tillgängliga</Text>
+            <Text style={styles.emptyText}>No rewards available</Text>
             <Text style={styles.emptySubtext}>
-              Administratören har inte skapat några belöningar än
+              The administrator has not created any rewards yet
             </Text>
           </View>
         }

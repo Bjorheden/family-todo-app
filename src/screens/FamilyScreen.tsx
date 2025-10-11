@@ -64,11 +64,11 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
 
   const handleLogout = async () => {
     Alert.alert(
-      'Logga ut',
-      'Är du säker på att du vill logga ut?',
+      'Sign Out',
+      'Are you sure you want to sign out?',
       [
-        { text: 'Avbryt', style: 'cancel' },
-        { text: 'Logga ut', onPress: performLogout },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', onPress: performLogout },
       ]
     );
   };
@@ -101,7 +101,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
 
   const handleInviteMember = async () => {
     if (!inviteEmail.trim()) {
-      Alert.alert('Fel', 'Vänligen ange en e-postadress');
+      Alert.alert('Error', 'Please enter an email address');
       return;
     }
 
@@ -111,15 +111,15 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
       // and creating a pending invitation record
 
       Alert.alert(
-        'Inbjudan skickad!',
-        `En inbjudan har skickats till ${inviteEmail}`
+        'Invitation sent!',
+        `An invitation has been sent to ${inviteEmail}`
       );
       
       setInviteEmail('');
       setShowInviteModal(false);
     } catch (error) {
       console.error('Error inviting member:', error);
-      Alert.alert('Fel', 'Kunde inte skicka inbjudan. Försök igen.');
+      Alert.alert('Error', 'Could not send invitation. Please try again.');
     }
   };
 
@@ -130,7 +130,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
   if (loading) {
     return (
       <View style={styles.centered}>
-        <Text>Laddar familjemedlemmar...</Text>
+        <Text>Loading family members...</Text>
       </View>
     );
   }
@@ -138,7 +138,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Min Familj</Text>
+        <Text style={styles.title}>My Family</Text>
         <View style={styles.headerButtons}>
           {currentUser.role === 'admin' && (
             <>
@@ -152,7 +152,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
                 style={styles.inviteButton}
                 onPress={() => setShowInviteModal(true)}
               >
-                <Text style={styles.inviteButtonText}>Bjud in</Text>
+                <Text style={styles.inviteButtonText}>Invite</Text>
               </TouchableOpacity>
             </>
           )}
@@ -160,7 +160,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
             style={styles.logoutButton}
             onPress={handleLogout}
           >
-            <Text style={styles.logoutButtonText}>Logga ut</Text>
+            <Text style={styles.logoutButtonText}>Sign Out</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -174,7 +174,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Inga familjemedlemmar</Text>
+            <Text style={styles.emptyText}>No family members</Text>
           </View>
         }
       />
@@ -186,11 +186,11 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Bjud in familjemedlem</Text>
+            <Text style={styles.modalTitle}>Invite family member</Text>
             
             <TextInput
               style={styles.input}
-              placeholder="E-postadress"
+              placeholder="Email address"
               value={inviteEmail}
               onChangeText={setInviteEmail}
               keyboardType="email-address"
@@ -205,14 +205,14 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
                   setInviteEmail('');
                 }}
               >
-                <Text style={styles.cancelButtonText}>Avbryt</Text>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleInviteMember}
               >
-                <Text style={styles.submitButtonText}>Skicka inbjudan</Text>
+                <Text style={styles.submitButtonText}>Send invitation</Text>
               </TouchableOpacity>
             </View>
           </View>

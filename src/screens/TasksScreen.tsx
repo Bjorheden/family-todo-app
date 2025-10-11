@@ -71,11 +71,12 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
 
   const handleCreateTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'completed_at' | 'approved_at'>) => {
     try {
-      await taskService.createTask(taskData);
+      await taskService.createTask(taskData, currentUser.role);
       loadTasks(); // Reload tasks
       onTaskCreated?.(); // Notify parent to refresh notifications
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating task:', error);
+      Alert.alert('Error', error.message || 'Failed to create task');
     }
   };
 
@@ -93,7 +94,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
   if (loading) {
     return (
       <View style={styles.centered}>
-        <Text>Laddar uppgifter...</Text>
+        <Text>Loading tasks...</Text>
       </View>
     );
   }
@@ -101,13 +102,15 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Uppgifter</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setShowCreateModal(true)}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
+        <Text style={styles.title}>Tasks</Text>
+        {currentUser.role === 'admin' && (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setShowCreateModal(true)}
+          >
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <FlatList
@@ -119,22 +122,27 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Inga uppgifter att visa</Text>
+            <Text style={styles.emptyText}>No tasks to show</Text>
             <Text style={styles.emptySubtext}>
-              Tryck på + för att skapa en ny uppgift
+              {currentUser.role === 'admin' 
+                ? 'Tap + to create a new task' 
+                : 'Ask your family admin to create tasks'
+              }
             </Text>
           </View>
         }
       />
 
-      <CreateTaskModal
-        visible={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateTask}
-        familyMembers={familyMembers}
-        currentUserId={currentUser.id}
-        familyId={currentUser.family_id!}
-      />
+      {currentUser.role === 'admin' && (
+        <CreateTaskModal
+          visible={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={handleCreateTask}
+          familyMembers={familyMembers}
+          currentUserId={currentUser.id}
+          familyId={currentUser.family_id!}
+        />
+      )}
     </View>
   );
 };
