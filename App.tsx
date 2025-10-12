@@ -15,10 +15,11 @@ import { taskService } from './src/services/taskService';
 import { User, Notification } from './src/types';
 import { supabase } from './src/services/supabase';
 import { NotificationModal } from './src/components/NotificationModal';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 type Tab = 'home' | 'tasks' | 'rewards' | 'family';
 
-export default function App() {
+function MainApp() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [familyMembers, setFamilyMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -458,3 +459,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
+// Main App component wrapped with Error Boundary for App Store compliance
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <MainApp />
+    </ErrorBoundary>
+  );
+}

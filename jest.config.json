@@ -1,0 +1,24 @@
+{
+  "testMatch": [
+    "**/__tests__/**/*.(test|spec).(ts|tsx|js)",
+    "**/*.(test|spec).(ts|tsx|js)"
+  ],
+  "collectCoverageFrom": [
+    "src/**/*.{ts,tsx}",
+    "!src/**/*.d.ts",
+    "!src/**/__tests__/**"
+  ],
+  "transform": {
+    "^.+\\.(ts|tsx)$": "babel-jest",
+    "^.+\\.(js|jsx)$": "babel-jest"
+  },
+  "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+  "testEnvironment": "node",
+  "setupFilesAfterEnv": ["<rootDir>/jest-setup.js"],
+  "transformIgnorePatterns": [
+    "node_modules/(?!(@supabase|react-native|@react-native|@testing-library)/)"
+  ],
+  "moduleNameMapper": {
+    "^@react-native-async-storage/async-storage$": "<rootDir>/node_modules/@react-native-async-storage/async-storage/jest/async-storage-mock.js"
+  }
+}
