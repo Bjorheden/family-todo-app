@@ -16,10 +16,9 @@ import { supabase } from '../services/supabase';
 
 interface FamilyScreenProps {
   currentUser: User;
-  onLogout: () => void;
 }
 
-export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogout }) => {
+export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser }) => {
   const [familyMembers, setFamilyMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,26 +61,7 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
     loadFamilyMembers();
   };
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', onPress: performLogout },
-      ]
-    );
-  };
 
-  const performLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      onLogout();
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
-  };
 
   const handleShowInviteCode = () => {
     if (!currentUser.family_id) return;
@@ -138,31 +118,29 @@ export const FamilyScreen: React.FC<FamilyScreenProps> = ({ currentUser, onLogou
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>My Family</Text>
-        <View style={styles.headerButtons}>
-          {currentUser.role === 'admin' && (
-            <>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>My Family</Text>
+        </View>
+        
+        {currentUser.role === 'admin' && (
+          <View style={styles.adminSection}>
+            <Text style={styles.adminSectionTitle}>Family Management</Text>
+            <View style={styles.adminActionsRow}>
               <TouchableOpacity
                 style={styles.codeButton}
                 onPress={handleShowInviteCode}
               >
-                <Text style={styles.codeButtonText}>Family Code</Text>
+                <Text style={styles.codeButtonText}>📋 Family Code</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.inviteButton}
                 onPress={() => setShowInviteModal(true)}
               >
-                <Text style={styles.inviteButtonText}>Invite</Text>
+                <Text style={styles.inviteButtonText}>✉️ Invite</Text>
               </TouchableOpacity>
-            </>
-          )}
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
-            <Text style={styles.logoutButtonText}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
+            </View>
+          </View>
+        )}
       </View>
 
       <FlatList
@@ -228,56 +206,81 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
+    padding: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  titleRow: {
+    marginBottom: 8,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#333',
   },
-  headerButtons: {
+  adminSection: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  adminSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#495057',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  adminActionsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
   },
   codeButton: {
+    flex: 1,
     backgroundColor: '#2196F3',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   codeButtonText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   inviteButton: {
+    flex: 1,
     backgroundColor: '#6200EA',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   inviteButtonText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  logoutButton: {
-    backgroundColor: '#F44336',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
+
   centered: {
     flex: 1,
     justifyContent: 'center',

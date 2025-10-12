@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LoginScreen, HomeScreen, TasksScreen, RewardsScreen, FamilyScreen, FamilySetupScreen } from './src/screens';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { authService } from './src/services/authService';
 import { notificationService } from './src/services/notificationService';
 import { taskService } from './src/services/taskService';
@@ -28,6 +29,7 @@ function MainApp() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     // Check for existing session
@@ -222,7 +224,6 @@ function MainApp() {
         return (
           <FamilyScreen
             currentUser={currentUser}
-            onLogout={handleLogout}
           />
         );
       default:
@@ -279,17 +280,26 @@ function MainApp() {
               <Text style={styles.compactNotificationText}>Notifications</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity 
-              style={styles.refreshIcon}
-              onPress={async () => {
-                await loadNotificationCount(currentUser.id);
-                if (currentUser.role === 'admin' && currentUser.family_id) {
-                  await loadPendingApprovals(currentUser.family_id);
-                }
-              }}
-            >
-              <Text style={styles.refreshEmoji}>🔄</Text>
-            </TouchableOpacity>
+            <View style={styles.topBarActions}>
+              <TouchableOpacity 
+                style={styles.settingsIcon}
+                onPress={() => setShowSettings(true)}
+              >
+                <Text style={styles.settingsEmoji}>⚙️</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.refreshIcon}
+                onPress={async () => {
+                  await loadNotificationCount(currentUser.id);
+                  if (currentUser.role === 'admin' && currentUser.family_id) {
+                    await loadPendingApprovals(currentUser.family_id);
+                  }
+                }}
+              >
+                <Text style={styles.refreshEmoji}>🔄</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
         
@@ -357,6 +367,15 @@ function MainApp() {
         onMarkAllAsRead={markAllNotificationsAsRead}
         onMarkNotificationAsRead={markNotificationAsRead}
       />
+
+      {/* Settings Modal */}
+      {showSettings && currentUser && (
+        <SettingsScreen
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
     </SafeAreaView>
       </SafeAreaProvider>
   );
@@ -444,6 +463,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     fontWeight: '500',
+  },
+  topBarActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  settingsIcon: {
+    backgroundColor: '#fff',
+    padding: 8,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  settingsEmoji: {
+    fontSize: 16,
   },
   refreshIcon: {
     backgroundColor: '#fff',

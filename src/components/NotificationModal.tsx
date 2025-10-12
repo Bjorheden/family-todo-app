@@ -25,7 +25,7 @@ export function NotificationModal({
   notificationCount, 
   onClose, 
   onMarkAllAsRead,
-  onMarkNotificationAsRead 
+  onMarkNotificationAsRead
 }: NotificationModalProps) {
   const insets = useSafeAreaInsets();
   
