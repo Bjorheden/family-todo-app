@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { Task } from '../types';
+import { Task, User } from '../types';
 
 interface TaskItemProps {
   task: Task;
@@ -9,6 +9,7 @@ interface TaskItemProps {
   onDelete?: (taskId: string) => void;
   currentUserId: string;
   isAdmin: boolean;
+  familyMembers: User[];
 }
 
 export const TaskItem: React.FC<TaskItemProps> = ({ 
@@ -17,7 +18,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   onStatusChange, 
   onDelete,
   currentUserId, 
-  isAdmin 
+  isAdmin,
+  familyMembers
 }) => {
   const getStatusColor = () => {
     switch (task.status) {
@@ -39,40 +41,74 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
+  const getAssignedToName = () => {
+    if (task.assigned_to === currentUserId) {
+      return 'You';
+    }
+    const assignedMember = familyMembers.find(member => member.id === task.assigned_to);
+    return assignedMember?.full_name || 'Unknown User';
+  };
+
   const handleStartTask = () => {
+    console.log('Start button pressed for task:', task.id);
+    
     Alert.alert(
       'Start Task',
       'Do you want to start working on this task?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Start', onPress: () => onStatusChange(task.id, 'in_progress') }
+        { 
+          text: 'Start', 
+          onPress: () => {
+            console.log('Start confirmed for task:', task.id);
+            onStatusChange(task.id, 'in_progress');
+          }
+        }
       ]
     );
   };
 
   const handleCompleteTask = () => {
+    console.log('Complete button pressed for task:', task.id);
+    
     Alert.alert(
       'Complete Task',
       'Are you sure you have completed this task?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Complete', onPress: () => onStatusChange(task.id, 'completed') }
+        { 
+          text: 'Complete', 
+          onPress: () => {
+            console.log('Complete confirmed for task:', task.id);
+            onStatusChange(task.id, 'completed');
+          }
+        }
       ]
     );
   };
 
   const handleApproveTask = () => {
+    console.log('Approve button pressed for task:', task.id);
+    
     Alert.alert(
       'Approve Task',
       'Do you want to approve this completed task? The user will receive their points.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Approve', onPress: () => onStatusChange(task.id, 'approved') }
+        { 
+          text: 'Approve', 
+          onPress: () => {
+            console.log('Approve confirmed for task:', task.id);
+            onStatusChange(task.id, 'approved');
+          }
+        }
       ]
     );
   };
 
   const handleDeleteTask = () => {
+    console.log('Delete button pressed for task:', task.id);
+    
     Alert.alert(
       'Delete Task',
       'Are you sure you want to delete this task? This action cannot be undone.',
@@ -81,7 +117,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({
         { 
           text: 'Delete', 
           style: 'destructive',
-          onPress: () => onDelete?.(task.id) 
+          onPress: () => {
+            console.log('Delete confirmed for task:', task.id);
+            onDelete?.(task.id);
+          }
         }
       ]
     );
@@ -137,33 +176,50 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
-      <View style={styles.content}>
-        <View style={styles.header}>
+    <View style={styles.container}>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
           <Text style={styles.title}>{task.title || 'Unnamed Task'}</Text>
+          <View style={styles.taskMeta}>
+            <Text style={styles.assignedTo}>
+              👤 {getAssignedToName()}
+            </Text>
+            {task.due_date && (
+              <Text style={styles.dueDate}>
+                📅 {new Date(task.due_date).toLocaleDateString()}
+              </Text>
+            )}
+          </View>
+        </View>
+        <View style={styles.headerRight}>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
+            <Text style={styles.statusText}>{getStatusText()}</Text>
+          </View>
           {canDeleteTask() && (
-            <TouchableOpacity style={styles.deleteIcon} onPress={handleDeleteTask}>
-              <Text style={styles.deleteIconText}>🗑️</Text>
+            <TouchableOpacity 
+              style={styles.deleteButton} 
+              onPress={handleDeleteTask}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.deleteIcon}>🗑️</Text>
             </TouchableOpacity>
           )}
         </View>
-        {task.description ? (
-          <Text style={styles.description}>{task.description}</Text>
-        ) : null}
-        <View style={styles.footer}>
-          <View style={[styles.status, { backgroundColor: getStatusColor() }]}>
-            <Text style={styles.statusText}>{getStatusText()}</Text>
-          </View>
-          <Text style={styles.points}>{task.points || 0} points</Text>
-        </View>
-        {task.due_date ? (
-          <Text style={styles.dueDate}>
-            Due: {new Date(task.due_date).toLocaleDateString()}
-          </Text>
-        ) : null}
+      </View>
+
+      {/* BODY - Clickable area for full details */}
+      <TouchableOpacity style={styles.body} onPress={onPress} activeOpacity={0.7}>
+        <Text style={styles.clickHint}>Tap to view details</Text>
+      </TouchableOpacity>
+
+      {/* FOOTER */}
+      <View style={styles.footer}>
+        <Text style={styles.points}>💰 {task.points || 0} pts</Text>
         {renderActionButtons()}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -172,95 +228,132 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     marginHorizontal: 16,
     marginVertical: 8,
-    borderRadius: 12,
-    elevation: 2,
+    borderRadius: 16,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
+    overflow: 'hidden',
   },
-  content: {
-    padding: 16,
-  },
+  
+  // HEADER STYLES
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    padding: 16,
+    paddingBottom: 12,
+  },
+  headerLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
-    marginRight: 8,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  taskMeta: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  assignedTo: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  dueDate: {
+    fontSize: 12,
+    color: '#e65100',
+    fontWeight: '500',
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  deleteButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+    minWidth: 32,
+    minHeight: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   deleteIcon: {
-    padding: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(244, 67, 54, 0.1)',
-  },
-  deleteIconText: {
     fontSize: 16,
   },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+  
+  // BODY STYLES
+  body: {
+    padding: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
+    alignItems: 'center',
   },
+  clickHint: {
+    fontSize: 13,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  
+  // FOOTER STYLES
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  status: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  statusText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
+    padding: 16,
+    paddingTop: 8,
+    backgroundColor: '#f9f9f9',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
   points: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2E7D32',
   },
-  dueDate: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 8,
-  },
+  
+  // ACTION BUTTONS
   actionButtons: {
     flexDirection: 'row',
-    marginTop: 12,
+    gap: 8,
   },
   startButton: {
-    backgroundColor: '#42A5F5',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
+    backgroundColor: '#1976D2',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   completeButton: {
-    backgroundColor: '#66BB6A',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
+    backgroundColor: '#388E3C',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   approveButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
+    backgroundColor: '#2E7D32',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

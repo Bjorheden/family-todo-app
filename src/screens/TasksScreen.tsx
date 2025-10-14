@@ -8,7 +8,7 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { TaskItem, CreateTaskModal } from '../components';
+import { TaskItem, CreateTaskModal, TaskDetailsModal } from '../components';
 import { Task, User } from '../types';
 import { taskService } from '../services/taskService';
 
@@ -23,6 +23,8 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showTaskDetails, setShowTaskDetails] = useState(false);
 
   const loadTasks = async () => {
     try {
@@ -46,7 +48,8 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
   };
 
   const handleTaskPress = (task: Task) => {
-    // TODO: Navigate to task details
+    setSelectedTask(task);
+    setShowTaskDetails(true);
   };
 
   const handleStatusChange = async (taskId: string, status: Task['status']) => {
@@ -88,6 +91,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
       onDelete={handleDeleteTask}
       currentUserId={currentUser.id}
       isAdmin={currentUser.role === 'admin'}
+      familyMembers={familyMembers}
     />
   );
 
@@ -143,6 +147,20 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
           familyId={currentUser.family_id!}
         />
       )}
+
+      <TaskDetailsModal
+        visible={showTaskDetails}
+        task={selectedTask}
+        onClose={() => {
+          setShowTaskDetails(false);
+          setSelectedTask(null);
+        }}
+        onStatusChange={handleStatusChange}
+        onDelete={handleDeleteTask}
+        currentUserId={currentUser.id}
+        isAdmin={currentUser.role === 'admin'}
+        familyMembers={familyMembers}
+      />
     </View>
   );
 };
