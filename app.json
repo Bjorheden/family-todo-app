@@ -49,7 +49,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "build": {
+        "babel": {
+          "include": ["@supabase/supabase-js"]
+        }
+      }
     },
     "updates": {
       "fallbackToCacheTimeout": 0
