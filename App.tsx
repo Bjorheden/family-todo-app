@@ -175,6 +175,10 @@ function MainApp() {
     setCurrentUser(null);
     setFamilyMembers([]);
     setActiveTab('home');
+    setShowSettings(false);
+    setShowNotifications(false);
+    setNotificationCount(0);
+    setPendingApprovals(0);
   };
 
   const handleFamilySetupComplete = async () => {

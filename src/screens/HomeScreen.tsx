@@ -30,7 +30,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <Text style={styles.greeting}>{getGreeting()}</Text>
         <Text style={styles.userName}>{currentUser.full_name}</Text>
         <Text style={styles.profileRole}>
-          {currentUser.role === 'admin' ? 'Admin' : 'Me'}
+          {currentUser.role === 'admin' ? 'Admin' : 'Member'}
         </Text>
       </View>
 

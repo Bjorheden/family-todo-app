@@ -25,14 +25,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const handleLogout = async () => {
-    Alert.alert(
+    // TODO: Uncomment and implement confirmation dialog when ready
+    /* Alert.alert(
       'Sign Out',
       'Are you sure you want to sign out?',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Sign Out', onPress: performLogout },
       ]
-    );
+    ); */
+    performLogout();
   };
 
   const performLogout = async () => {

@@ -193,8 +193,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
           </View>
         </View>
         <View style={styles.headerRight}>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
-            <Text style={styles.statusText}>{getStatusText()}</Text>
+          <View style={[styles.statusChip, { borderColor: getStatusColor() }]}>
+            <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
+            <Text style={[styles.statusText, { color: getStatusColor() }]}>{getStatusText()}</Text>
           </View>
           {canDeleteTask() && (
             <TouchableOpacity 
@@ -274,28 +275,35 @@ const styles = StyleSheet.create({
     color: '#e65100',
     fontWeight: '500',
   },
-  statusBadge: {
-    paddingHorizontal: 10,
+  statusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: '#fff',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
   },
   statusText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '500',
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   deleteButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(244, 67, 54, 0.1)',
-    minWidth: 32,
-    minHeight: 32,
+    padding: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },
   deleteIcon: {
-    fontSize: 16,
+    fontSize: 18,
+    color: '#dc3545',
   },
   
   // BODY STYLES

@@ -36,16 +36,16 @@ export function NotificationModal({
       transparent={false}
     >
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>{`Notifications (${notificationCount || 0})`}</Text>
-          <View style={styles.modalActions}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>{`Notifications (${notificationCount || 0})`}</Text>
+          <View style={styles.headerActions}>
             {notificationCount > 0 && (
               <TouchableOpacity onPress={onMarkAllAsRead} style={styles.markAllButton}>
                 <Text style={styles.markAllButtonText}>Mark All Read</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.closeButton}>✕</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -93,33 +93,23 @@ export function NotificationModal({
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
-  modalHeader: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 15,
-    backgroundColor: '#ffffff',
+    padding: 20,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
+    borderBottomColor: '#e9ecef',
   },
-  modalTitle: {
+  headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
+    fontWeight: '600',
+    color: '#212529',
   },
-  modalActions: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 15,
@@ -136,9 +126,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   closeButton: {
-    fontSize: 24,
-    color: '#666',
-    fontWeight: 'bold',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 18,
+    color: '#6c757d',
   },
   notificationItem: {
     backgroundColor: '#ffffff',
