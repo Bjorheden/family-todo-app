@@ -111,8 +111,10 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => setShowCreateModal(true)}
+            activeOpacity={0.8}
           >
-            <Text style={styles.addButtonText}>+</Text>
+            <Text style={styles.addButtonIcon}>+</Text>
+            <Text style={styles.addButtonText}>New Task</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -168,7 +170,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
   header: {
     flexDirection: 'row',
@@ -185,17 +187,31 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#6200EA',
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#6200EA',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  addButtonText: {
-    fontSize: 24,
+  addButtonIcon: {
+    fontSize: 18,
     color: '#fff',
     fontWeight: 'bold',
+    marginRight: 6,
+  },
+  addButtonText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '600',
   },
   centered: {
     flex: 1,
