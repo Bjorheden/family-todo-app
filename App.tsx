@@ -31,6 +31,7 @@ function MainApp() {
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
 
+
   useEffect(() => {
     // Check for existing session
     checkAuthStatus();
@@ -220,7 +221,8 @@ function MainApp() {
       case 'rewards':
         return (
           <RewardsScreen 
-            currentUser={currentUser} 
+            currentUser={currentUser}
+            familyMembers={familyMembers} 
             onUserDataUpdate={loadUserData}
           />
         );
@@ -380,6 +382,8 @@ function MainApp() {
           onClose={() => setShowSettings(false)}
         />
       )}
+
+
     </SafeAreaView>
       </SafeAreaProvider>
   );

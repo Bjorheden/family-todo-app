@@ -24,13 +24,13 @@ export const RewardItem: React.FC<RewardItemProps> = ({ reward, userPoints, onPr
         )}
         <View style={styles.footer}>
           <Text style={[styles.points, !canAfford && styles.disabledText]}>
-            {reward.points_required} poäng
+            {reward.points_required} points
           </Text>
           {canAfford ? (
-            <Text style={styles.affordable}>Kan köpas!</Text>
+            <Text style={styles.affordable}>Can claim!</Text>
           ) : (
             <Text style={styles.notAffordable}>
-              Behöver {reward.points_required - userPoints} poäng till
+              Need {reward.points_required - userPoints} more points
             </Text>
           )}
         </View>

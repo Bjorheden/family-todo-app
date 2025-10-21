@@ -6,34 +6,74 @@ import {
   StyleSheet,
   RefreshControl,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
-import { RewardItem } from '../components';
-import { Reward, User } from '../types';
-import { supabase } from '../services/supabase';
+import { RewardItem, CreateRewardModal } from '../components';
+import { Reward, User, RewardClaim } from '../types';
+import { rewardService } from '../services';
 
 interface RewardsScreenProps {
   currentUser: User;
+  familyMembers: User[];
   onUserDataUpdate: () => Promise<void>;
 }
 
-export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser, onUserDataUpdate }) => {
+type RewardTab = 'available' | 'claimed';
+type ClaimedRewardWithDetails = RewardClaim & { reward: Reward; user: { full_name: string } };
+
+export const RewardsScreen: React.FC<RewardsScreenProps> = ({ 
+  currentUser, 
+  familyMembers,
+  onUserDataUpdate
+}) => {
   const [rewards, setRewards] = useState<Reward[]>([]);
+  const [claimedRewards, setClaimedRewards] = useState<ClaimedRewardWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<RewardTab>('available');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);  // For admin filtering
 
   const loadRewards = async () => {
     try {
-      const { data, error } = await supabase
-        .from('rewards')
-        .select('*')
-        .eq('family_id', currentUser.family_id)
-        .eq('is_active', true)
-        .order('points_required', { ascending: true });
-
-      if (error) throw error;
-      setRewards(data || []);
+      const rewards = await rewardService.getFamilyRewards(currentUser.family_id!);
+      setRewards(rewards);
     } catch (error) {
       console.error('Error loading rewards:', error);
+    }
+  };
+
+  const loadClaimedRewards = async () => {
+    try {
+      console.log('Current user:', { 
+        id: currentUser.id, 
+        role: currentUser.role, 
+        family_id: currentUser.family_id,
+        full_name: currentUser.full_name 
+      });
+      
+      if (currentUser.role === 'admin') {
+        // Load all family claims for admin
+        console.log('Loading family claims for admin, family_id:', currentUser.family_id);
+        const claims = await rewardService.getFamilyRewardClaims(currentUser.family_id!);
+        console.log('Loaded claims for admin:', claims);
+        setClaimedRewards(claims as ClaimedRewardWithDetails[]);
+      } else {
+        // Load only user's own claims
+        console.log('Loading user claims for:', currentUser.id);
+        const claims = await rewardService.getUserClaimedRewards(currentUser.id);
+        console.log('Loaded user claims:', claims);
+        setClaimedRewards(claims as ClaimedRewardWithDetails[]);
+      }
+    } catch (error) {
+      console.error('Error loading claimed rewards:', error);
+    }
+  };
+
+  const loadAllData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadRewards(), loadClaimedRewards()]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -41,14 +81,14 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser, onUse
   };
 
   useEffect(() => {
-    loadRewards();
+    loadAllData();
     onUserDataUpdate(); // Refresh user data to get current points
   }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     await Promise.all([
-      loadRewards(),
+      loadAllData(),
       onUserDataUpdate() // Refresh user data to get updated points
     ]);
   };
@@ -73,27 +113,65 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser, onUse
 
   const claimReward = async (reward: Reward) => {
     try {
-      const { error } = await supabase
-        .from('reward_claims')
-        .insert([
-          {
-            user_id: currentUser.id,
-            reward_id: reward.id,
-            status: 'pending',
-            claimed_at: new Date().toISOString(),
-          },
-        ]);
-
-      if (error) throw error;
+      await rewardService.claimReward(reward.id, currentUser.id, reward.points_required);
 
       Alert.alert(
         'Reward Claimed!',
-        'Your reward request has been sent and is waiting for approval.'
+        `You have successfully claimed "${reward.title}" for ${reward.points_required} points!`
       );
+
+      // Refresh user data and claimed rewards
+      await onUserDataUpdate();
+      await loadClaimedRewards();
     } catch (error) {
       console.error('Error claiming reward:', error);
       Alert.alert('Error', 'Could not claim reward. Please try again.');
     }
+  };
+
+  const handleCreateReward = async (rewardData: Omit<Reward, 'id' | 'created_at'>) => {
+    try {
+      await rewardService.createReward(rewardData, currentUser.role);
+
+      Alert.alert('Success', 'Reward created successfully!');
+      await loadRewards(); // Reload rewards to show the new one
+    } catch (error: any) {
+      console.error('Error creating reward:', error);
+      Alert.alert('Error', error.message || 'Failed to create reward');
+      throw error; // Re-throw to let the modal handle loading state
+    }
+  };
+
+  const handleApproveReward = async (claimId: string, rewardTitle: string) => {
+    try {
+      await rewardService.updateRewardClaimStatus(claimId, 'approved');
+      Alert.alert('Success', `Reward claim for "${rewardTitle}" approved!`);
+      await loadClaimedRewards();
+    } catch (error) {
+      console.error('Error approving claim:', error);
+      Alert.alert('Error', 'Failed to approve the reward claim.');
+    }
+  };
+
+  const handleDenyReward = async (claimId: string, rewardTitle: string) => {
+    try {
+      await rewardService.updateRewardClaimStatus(claimId, 'denied');
+      Alert.alert('Success', `Reward claim for "${rewardTitle}" denied.`);
+      await loadClaimedRewards();
+    } catch (error) {
+      console.error('Error denying claim:', error);
+      Alert.alert('Error', 'Failed to deny the reward claim.');
+    }
+  };
+
+  const getFilteredClaimedRewards = () => {
+    console.log('Filtering claims - selectedUserId:', selectedUserId, 'total claims:', claimedRewards.length);
+    
+    if (selectedUserId === null || currentUser.role !== 'admin') {
+      return claimedRewards;
+    }
+    
+    return claimedRewards.filter(claim => claim.user_id === selectedUserId);
   };
 
   const renderReward = ({ item }: { item: Reward }) => (
@@ -103,6 +181,68 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser, onUse
       onPress={() => handleRewardPress(item)}
     />
   );
+
+    const renderClaimedReward = ({ item }: { item: ClaimedRewardWithDetails }) => {
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case 'approved': return '#4CAF50';
+        case 'pending': return '#FF9800';
+        case 'denied': return '#F44336';
+        default: return '#757575';
+      }
+    };
+
+    const getStatusText = (status: string) => {
+      switch (status) {
+        case 'approved': return 'Approved';
+        case 'pending': return 'Pending';
+        case 'denied': return 'Denied';
+        default: return 'Unknown';
+      }
+    };
+
+    return (
+      <View style={styles.claimedRewardCard}>
+        <View style={styles.claimedRewardHeader}>
+          <View style={styles.claimedRewardInfo}>
+            <Text style={styles.claimedRewardTitle}>{item.reward.title}</Text>
+            {currentUser.role === 'admin' && (
+              <Text style={styles.claimedRewardUser}>By: {item.user.full_name}</Text>
+            )}
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+            <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
+          </View>
+        </View>
+        
+        {item.reward.description && (
+          <Text style={styles.claimedRewardDescription}>{item.reward.description}</Text>
+        )}
+        
+          <Text style={styles.claimedRewardPoints}>{item.reward.points_required} points</Text>
+          <Text style={styles.claimedRewardDate}>
+            Claimed: {new Date(item.claimed_at).toLocaleDateString()}
+          </Text>
+
+        {currentUser.role === 'admin' && item.status === 'pending' && (
+          <View style={styles.adminActions}>
+            <TouchableOpacity
+              style={styles.approveButton}
+              onPress={() => handleApproveReward(item.id, item.reward.title)}
+            >
+              <Text style={styles.actionButtonText}>Approve</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.denyButton}
+              onPress={() => handleDenyReward(item.id, item.reward.title)}
+            >
+              <Text style={styles.actionButtonText}>Deny</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   if (loading) {
     return (
@@ -116,28 +256,122 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({ currentUser, onUse
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Rewards</Text>
-        <View style={styles.pointsContainer}>
-          <Text style={styles.pointsLabel}>Your points:</Text>
-          <Text style={styles.pointsValue}>{currentUser.points}</Text>
+        <View style={styles.headerRight}>
+          <View style={styles.pointsContainer}>
+            <Text style={styles.pointsLabel}>Your points:</Text>
+            <Text style={styles.pointsValue}>{currentUser.points}</Text>
+          </View>
+          
+          {currentUser.role === 'admin' && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setShowCreateModal(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.addButtonIcon}>+</Text>
+              <Text style={styles.addButtonText}>New Reward</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      <FlatList
-        data={rewards}
-        renderItem={renderReward}
-        keyExtractor={(item) => item.id}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No rewards available</Text>
-            <Text style={styles.emptySubtext}>
-              The administrator has not created any rewards yet
-            </Text>
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'available' && styles.activeTab]}
+          onPress={() => setActiveTab('available')}
+        >
+          <Text style={[styles.tabText, activeTab === 'available' && styles.activeTabText]}>
+            Available Rewards
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'claimed' && styles.activeTab]}
+          onPress={() => setActiveTab('claimed')}
+        >
+          <Text style={[styles.tabText, activeTab === 'claimed' && styles.activeTabText]}>
+            Claimed Rewards
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* User Filter for Admin (only on claimed tab) */}
+      {activeTab === 'claimed' && currentUser.role === 'admin' && (
+        <View style={styles.filterContainer}>
+          <Text style={styles.filterLabel}>Filter by user:</Text>
+          <View style={styles.userFilterContainer}>
+            <TouchableOpacity
+              style={[styles.userFilterButton, !selectedUserId && styles.activeUserFilter]}
+              onPress={() => setSelectedUserId(null)}
+            >
+              <Text style={[styles.userFilterText, !selectedUserId && styles.activeUserFilterText]}>
+                All Users
+              </Text>
+            </TouchableOpacity>
+            {familyMembers.map(member => (
+              <TouchableOpacity
+                key={member.id}
+                style={[styles.userFilterButton, selectedUserId === member.id && styles.activeUserFilter]}
+                onPress={() => setSelectedUserId(member.id)}
+              >
+                <Text style={[styles.userFilterText, selectedUserId === member.id && styles.activeUserFilterText]}>
+                  {member.full_name}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        }
-      />
+        </View>
+      )}
+
+      {/* Content based on active tab */}
+      {activeTab === 'available' ? (
+        <FlatList
+          data={rewards}
+          renderItem={renderReward}
+          keyExtractor={(item) => item.id}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No rewards available</Text>
+              <Text style={styles.emptySubtext}>
+                The administrator has not created any rewards yet
+              </Text>
+            </View>
+          }
+        />
+      ) : (
+        <FlatList
+          data={getFilteredClaimedRewards()}
+          renderItem={renderClaimedReward}
+          keyExtractor={(item) => item.id}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No claimed rewards</Text>
+              <Text style={styles.emptySubtext}>
+                {selectedUserId 
+                  ? `${familyMembers.find(m => m.id === selectedUserId)?.full_name} hasn't claimed any rewards yet`
+                  : 'No one has claimed any rewards yet'
+                }
+              </Text>
+            </View>
+          }
+        />
+      )}
+
+      {currentUser.role === 'admin' && (
+        <CreateRewardModal
+          visible={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={handleCreateReward}
+          familyId={currentUser.family_id!}
+          currentUserId={currentUser.id}
+        />
+      )}
     </View>
   );
 };
@@ -161,8 +395,58 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
+  headerRight: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
   pointsContainer: {
     alignItems: 'flex-end',
+  },
+  quickActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  quickActionButton: {
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  quickActionText: {
+    fontSize: 11,
+    color: '#495057',
+    fontWeight: '500',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#6200EA',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  addButtonIcon: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: 'bold',
+    marginRight: 4,
+  },
+  addButtonText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600',
   },
   pointsLabel: {
     fontSize: 14,
@@ -193,5 +477,178 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  // Tab navigation styles
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: '#6200EA',
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#666',
+  },
+  activeTabText: {
+    color: '#6200EA',
+    fontWeight: '600',
+  },
+  // Filter styles
+  filterContainer: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 8,
+  },
+  userFilterContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  userFilterButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#f8f9fa',
+  },
+  activeUserFilter: {
+    backgroundColor: '#6200EA',
+    borderColor: '#6200EA',
+  },
+  userFilterText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  activeUserFilterText: {
+    color: '#fff',
+  },
+  // Claimed reward styles
+  claimedRewardCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  claimedRewardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  claimedRewardInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  claimedRewardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  claimedRewardUser: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 2,
+  },
+  claimedRewardDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  pendingBadge: {
+    backgroundColor: '#fff3cd',
+    borderColor: '#ffc107',
+    borderWidth: 1,
+  },
+  approvedBadge: {
+    backgroundColor: '#d4edda',
+    borderColor: '#28a745',
+    borderWidth: 1,
+  },
+  deniedBadge: {
+    backgroundColor: '#f8d7da',
+    borderColor: '#dc3545',
+    borderWidth: 1,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  pendingText: {
+    color: '#856404',
+  },
+  approvedText: {
+    color: '#155724',
+  },
+  deniedText: {
+    color: '#721c24',
+  },
+  claimedRewardDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  claimedRewardPoints: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6200EA',
+    marginBottom: 12,
+  },
+  adminActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  approveButton: {
+    flex: 1,
+    backgroundColor: '#28a745',
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  denyButton: {
+    flex: 1,
+    backgroundColor: '#dc3545',
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
