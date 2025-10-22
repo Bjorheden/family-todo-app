@@ -104,8 +104,6 @@ export class RewardService {
 
   // Get user's claimed rewards
   static async getUserClaimedRewards(userId: string): Promise<(RewardClaim & { reward: Reward; user: { full_name: string } })[]> {
-    console.log('getUserClaimedRewards called with userId:', userId);
-    
     const { data, error } = await supabase
       .from('reward_claims')
       .select(`
@@ -116,15 +114,12 @@ export class RewardService {
       .eq('user_id', userId)
       .order('claimed_at', { ascending: false });
 
-    console.log('getUserClaimedRewards result:', { data, error });
     if (error) throw error;
     return data || [];
   }
 
   // Get all reward claims for a family (admin only)
   static async getFamilyRewardClaims(familyId: string): Promise<(RewardClaim & { reward: Reward; user: { full_name: string } })[]> {
-    console.log('getFamilyRewardClaims called with familyId:', familyId);
-    
     const { data, error } = await supabase
       .from('reward_claims')
       .select(`
@@ -135,7 +130,6 @@ export class RewardService {
       .eq('reward.family_id', familyId)
       .order('claimed_at', { ascending: false });
 
-    console.log('getFamilyRewardClaims result:', { data, error });
     if (error) throw error;
     return data || [];
   }

@@ -9,7 +9,6 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Reward } from '../types';
 
 interface CreateRewardModalProps {
@@ -27,7 +26,6 @@ export function CreateRewardModal({
   familyId,
   currentUserId,
 }: CreateRewardModalProps) {
-  const insets = useSafeAreaInsets();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [pointsRequired, setPointsRequired] = useState('');
@@ -79,94 +77,54 @@ export function CreateRewardModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={false}>
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Create New Reward</Text>
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.content}>
-          {/* Title Input */}
-          <View style={styles.inputGroup}>
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.overlay}>
+        <View style={styles.modal}>
+          <ScrollView style={styles.content}>
+            <Text style={styles.title}>Create New Reward</Text>
             <Text style={styles.label}>Reward Title *</Text>
             <TextInput
               style={styles.input}
               value={title}
               onChangeText={setTitle}
               placeholder="e.g. Extra allowance, Movie night, etc."
-              placeholderTextColor="#999"
             />
-          </View>
 
-          {/* Description Input */}
-          <View style={styles.inputGroup}>
             <Text style={styles.label}>Description (Optional)</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={description}
               onChangeText={setDescription}
               placeholder="Describe what this reward includes..."
-              placeholderTextColor="#999"
               multiline
               numberOfLines={3}
             />
-          </View>
 
-          {/* Points Required Input */}
-          <View style={styles.inputGroup}>
             <Text style={styles.label}>Points Required *</Text>
             <TextInput
               style={styles.input}
               value={pointsRequired}
               onChangeText={setPointsRequired}
               placeholder="e.g. 50"
-              placeholderTextColor="#999"
               keyboardType="numeric"
             />
-          </View>
 
-          {/* Preview Card */}
-          <View style={styles.previewSection}>
-            <Text style={styles.previewLabel}>Preview:</Text>
-            <View style={styles.previewCard}>
-              <Text style={styles.previewTitle}>
-                {title || 'Reward Title'}
+          </ScrollView>
+
+          <View style={styles.buttons}>
+            <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.submitButton, loading && styles.disabledButton]} 
+              onPress={handleSubmit}
+              disabled={loading}
+            >
+              <Text style={styles.submitButtonText}>
+                {loading ? 'Creating...' : 'Create Reward'}
               </Text>
-              {description && (
-                <Text style={styles.previewDescription}>{description}</Text>
-              )}
-              <View style={styles.previewFooter}>
-                <Text style={styles.previewPoints}>
-                  {pointsRequired || '0'} points
-                </Text>
-                <Text style={styles.previewStatus}>New Reward</Text>
-              </View>
-            </View>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-
-        {/* Action Buttons */}
-        <View style={styles.actionBar}>
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={handleClose}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.createButton, loading && styles.disabledButton]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            <Text style={styles.createButtonText}>
-              {loading ? 'Creating...' : 'Create Reward'}
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -174,141 +132,74 @@ export function CreateRewardModal({
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#212529',
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  closeButtonText: {
-    fontSize: 18,
-    color: '#6c757d',
+  modal: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    width: '90%',
+    maxHeight: '80%',
   },
   content: {
-    flex: 1,
     padding: 20,
   },
-  inputGroup: {
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
     marginBottom: 20,
+    textAlign: 'center',
+    color: '#333',
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#495057',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#212529',
-  },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  previewSection: {
-    marginTop: 20,
-  },
-  previewLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#495057',
-    marginBottom: 12,
-  },
-  previewCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  previewTitle: {
-    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 8,
+    marginTop: 16,
     color: '#333',
   },
-  previewDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-  },
-  previewFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  previewPoints: {
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FF6B35',
   },
-  previewStatus: {
-    fontSize: 12,
-    color: '#6200EA',
-    fontWeight: 'bold',
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
   },
-  actionBar: {
+  buttons: {
     flexDirection: 'row',
     padding: 20,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
     gap: 12,
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: 'transparent',
+    padding: 12,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#6c757d',
-    paddingVertical: 12,
-    borderRadius: 12,
+    borderColor: '#ddd',
     alignItems: 'center',
   },
   cancelButtonText: {
-    color: '#6c757d',
     fontSize: 16,
-    fontWeight: '600',
+    color: '#666',
   },
-  createButton: {
-    flex: 2,
+  submitButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
     backgroundColor: '#6200EA',
-    paddingVertical: 12,
-    borderRadius: 12,
     alignItems: 'center',
   },
-  createButtonText: {
-    color: '#fff',
+  submitButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    color: '#fff',
+    fontWeight: 'bold',
   },
   disabledButton: {
     opacity: 0.6,

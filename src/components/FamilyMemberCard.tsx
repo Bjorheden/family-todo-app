@@ -17,9 +17,9 @@ export const FamilyMemberCard: React.FC<FamilyMemberCardProps> = ({ member }) =>
       <View style={styles.info}>
         <Text style={styles.name}>{member.full_name}</Text>
         <Text style={styles.role}>
-          {member.role === 'admin' ? 'Administratör' : 'Medlem'}
+          {member.role === 'admin' ? 'Administrator' : 'Member'}
         </Text>
-        <Text style={styles.points}>{member.points} poäng</Text>
+        <Text style={styles.points}>💰 {member.points}</Text>
       </View>
     </View>
   );

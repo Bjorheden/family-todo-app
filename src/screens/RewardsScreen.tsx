@@ -45,24 +45,13 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
 
   const loadClaimedRewards = async () => {
     try {
-      console.log('Current user:', { 
-        id: currentUser.id, 
-        role: currentUser.role, 
-        family_id: currentUser.family_id,
-        full_name: currentUser.full_name 
-      });
-      
       if (currentUser.role === 'admin') {
         // Load all family claims for admin
-        console.log('Loading family claims for admin, family_id:', currentUser.family_id);
         const claims = await rewardService.getFamilyRewardClaims(currentUser.family_id!);
-        console.log('Loaded claims for admin:', claims);
         setClaimedRewards(claims as ClaimedRewardWithDetails[]);
       } else {
         // Load only user's own claims
-        console.log('Loading user claims for:', currentUser.id);
         const claims = await rewardService.getUserClaimedRewards(currentUser.id);
-        console.log('Loaded user claims:', claims);
         setClaimedRewards(claims as ClaimedRewardWithDetails[]);
       }
     } catch (error) {
@@ -165,8 +154,6 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
   };
 
   const getFilteredClaimedRewards = () => {
-    console.log('Filtering claims - selectedUserId:', selectedUserId, 'total claims:', claimedRewards.length);
-    
     if (selectedUserId === null || currentUser.role !== 'admin') {
       return claimedRewards;
     }
@@ -210,8 +197,10 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
               <Text style={styles.claimedRewardUser}>By: {item.user.full_name}</Text>
             )}
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-            <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) || '#757575' }]}>
+            <Text style={styles.statusText}>
+              {getStatusText(item.status) || 'Unknown'}
+            </Text>
           </View>
         </View>
         
@@ -219,7 +208,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
           <Text style={styles.claimedRewardDescription}>{item.reward.description}</Text>
         )}
         
-          <Text style={styles.claimedRewardPoints}>{item.reward.points_required} points</Text>
+          <Text style={styles.claimedRewardPoints}>💰 {item.reward.points_required}</Text>
           <Text style={styles.claimedRewardDate}>
             Claimed: {new Date(item.claimed_at).toLocaleDateString()}
           </Text>
@@ -258,8 +247,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
         <Text style={styles.title}>Rewards</Text>
         <View style={styles.headerRight}>
           <View style={styles.pointsContainer}>
-            <Text style={styles.pointsLabel}>Your points:</Text>
-            <Text style={styles.pointsValue}>{currentUser.points}</Text>
+            <Text style={styles.pointsValue}>💰 {currentUser.points}</Text>
           </View>
           
           {currentUser.role === 'admin' && (
@@ -308,14 +296,14 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
                 All Users
               </Text>
             </TouchableOpacity>
-            {familyMembers.map(member => (
+            {familyMembers?.map(member => (
               <TouchableOpacity
                 key={member.id}
                 style={[styles.userFilterButton, selectedUserId === member.id && styles.activeUserFilter]}
                 onPress={() => setSelectedUserId(member.id)}
               >
                 <Text style={[styles.userFilterText, selectedUserId === member.id && styles.activeUserFilterText]}>
-                  {member.full_name}
+                  {member.full_name || 'Unknown'}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -345,7 +333,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
         <FlatList
           data={getFilteredClaimedRewards()}
           renderItem={renderClaimedReward}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => `claimed-${item.id}`}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
@@ -354,7 +342,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
               <Text style={styles.emptyText}>No claimed rewards</Text>
               <Text style={styles.emptySubtext}>
                 {selectedUserId 
-                  ? `${familyMembers.find(m => m.id === selectedUserId)?.full_name} hasn't claimed any rewards yet`
+                  ? 'This user hasn\'t claimed any rewards yet'
                   : 'No one has claimed any rewards yet'
                 }
               </Text>
@@ -396,17 +384,16 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   headerRight: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   pointsContainer: {
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    marginRight: 12,
   },
   quickActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   quickActionButton: {
     backgroundColor: '#f8f9fa',
@@ -520,7 +507,6 @@ const styles = StyleSheet.create({
   userFilterContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
   },
   userFilterButton: {
     paddingHorizontal: 12,
@@ -529,6 +515,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     backgroundColor: '#f8f9fa',
+    marginRight: 8,
+    marginBottom: 8,
   },
   activeUserFilter: {
     backgroundColor: '#6200EA',
@@ -630,7 +618,6 @@ const styles = StyleSheet.create({
   },
   adminActions: {
     flexDirection: 'row',
-    gap: 8,
   },
   approveButton: {
     flex: 1,
@@ -638,6 +625,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
+    marginRight: 4,
   },
   denyButton: {
     flex: 1,
@@ -645,6 +633,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
+    marginLeft: 4,
   },
   actionButtonText: {
     color: '#fff',

@@ -42,8 +42,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <Text style={styles.cardTitle}>Points</Text>
           </View>
           <View style={styles.cardContent}>
-            <Text style={styles.pointsValue}>{currentUser.points}</Text>
-            <Text style={styles.pointsLabel}>points</Text>
+            <Text style={styles.pointsValue}>💰 {currentUser.points}</Text>
           </View>
         </View>
 
