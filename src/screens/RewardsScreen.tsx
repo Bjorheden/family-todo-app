@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { RewardItem, CreateRewardModal } from '../components';
 import { Reward, User, RewardClaim } from '../types';
-import { rewardService } from '../services';
+import { RewardService } from '../services';
 
 interface RewardsScreenProps {
   currentUser: User;
@@ -18,7 +18,7 @@ interface RewardsScreenProps {
   onUserDataUpdate: () => Promise<void>;
 }
 
-type RewardTab = 'available' | 'claimed';
+type RewardTab = 'available' | 'claimed' | 'pending';
 type ClaimedRewardWithDetails = RewardClaim & { reward: Reward; user: { full_name: string } };
 
 export const RewardsScreen: React.FC<RewardsScreenProps> = ({ 
@@ -28,6 +28,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
 }) => {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [claimedRewards, setClaimedRewards] = useState<ClaimedRewardWithDetails[]>([]);
+  const [pendingRewards, setPendingRewards] = useState<ClaimedRewardWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -36,7 +37,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
 
   const loadRewards = async () => {
     try {
-      const rewards = await rewardService.getFamilyRewards(currentUser.family_id!);
+      const rewards = await RewardService.getFamilyRewards(currentUser.family_id!);
       setRewards(rewards);
     } catch (error) {
       console.error('Error loading rewards:', error);
@@ -47,11 +48,11 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
     try {
       if (currentUser.role === 'admin') {
         // Load all family claims for admin
-        const claims = await rewardService.getFamilyRewardClaims(currentUser.family_id!);
+        const claims = await RewardService.getFamilyRewardClaims(currentUser.family_id!);
         setClaimedRewards(claims as ClaimedRewardWithDetails[]);
       } else {
         // Load only user's own claims
-        const claims = await rewardService.getUserClaimedRewards(currentUser.id);
+        const claims = await RewardService.getUserClaimedRewards(currentUser.id);
         setClaimedRewards(claims as ClaimedRewardWithDetails[]);
       }
     } catch (error) {
@@ -59,10 +60,29 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
     }
   };
 
+  const loadPendingRewards = async () => {
+    try {
+      if (currentUser.role === 'admin') {
+        // Load pending reward claims that require approval
+        const claims = await RewardService.getFamilyRewardClaims(currentUser.family_id!);
+        const pendingClaims = claims.filter((claim: any) => 
+          claim.status === 'pending' && claim.reward.requires_approval
+        );
+        setPendingRewards(pendingClaims as ClaimedRewardWithDetails[]);
+      }
+    } catch (error) {
+      console.error('Error loading pending rewards:', error);
+    }
+  };
+
   const loadAllData = async () => {
     setLoading(true);
     try {
-      await Promise.all([loadRewards(), loadClaimedRewards()]);
+      const promises = [loadRewards(), loadClaimedRewards()];
+      if (currentUser.role === 'admin') {
+        promises.push(loadPendingRewards());
+      }
+      await Promise.all(promises);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -83,35 +103,77 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
   };
 
   const handleRewardPress = (reward: Reward) => {
-    if (currentUser.points >= reward.points_required) {
+    // Check if user already has a pending claim for this reward
+    const existingPendingClaim = claimedRewards.find(claim => 
+      claim.reward_id === reward.id && 
+      claim.user_id === currentUser.id && 
+      claim.status === 'pending'
+    );
+
+    if (currentUser.points >= reward.points_required || reward.requires_approval) {
+      let message = `Do you want to claim "${reward.title}" for 💰 ${reward.points_required}?`;
+      
+      if (reward.requires_approval) {
+        message += '\n\nThis reward requires admin approval.';
+      }
+      
+      if (existingPendingClaim) {
+        message += '\n\n⚠️ You already have a pending claim for this reward.';
+      }
+
       Alert.alert(
         'Claim Reward',
-        `Do you want to claim "${reward.title}" for ${reward.points_required} points?`,
+        message,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Claim', onPress: () => claimReward(reward) },
+          { text: existingPendingClaim ? 'Claim Again' : 'Claim', onPress: () => claimReward(reward) },
         ]
       );
     } else {
       Alert.alert(
         'Not Enough Points',
-        `You need ${reward.points_required - currentUser.points} more points to claim this reward.`
+        `You need 💰 ${reward.points_required - currentUser.points} more to claim this reward.`
       );
     }
   };
 
   const claimReward = async (reward: Reward) => {
     try {
-      await rewardService.claimReward(reward.id, currentUser.id, reward.points_required);
+      console.log('🎁 Claiming reward:', { 
+        rewardTitle: reward.title, 
+        requiresApproval: reward.requires_approval,
+        userId: currentUser.id,
+        userRole: currentUser.role 
+      });
 
-      Alert.alert(
-        'Reward Claimed!',
-        `You have successfully claimed "${reward.title}" for ${reward.points_required} points!`
-      );
+      if (reward.requires_approval) {
+        // Create a pending claim without deducting points
+        await RewardService.createPendingRewardClaim(reward.id, currentUser.id);
+        
+        Alert.alert(
+          'Claim Submitted!',
+          `Your claim for "${reward.title}" has been submitted for admin approval.`
+        );
 
-      // Refresh user data and claimed rewards
-      await onUserDataUpdate();
-      await loadClaimedRewards();
+        // Refresh pending rewards (if admin) and claimed rewards
+        if (currentUser.role === 'admin') {
+          await loadPendingRewards();
+        }
+        await loadClaimedRewards();
+      } else {
+        console.log('⚡ Reward does not require approval - immediate claim');
+        // Process immediate claim with point deduction
+        await RewardService.claimReward(reward.id, currentUser.id, reward.points_required);
+
+        Alert.alert(
+          'Reward Claimed!',
+          `You have successfully claimed "${reward.title}" for ${reward.points_required} points!`
+        );
+
+        // Refresh user data and claimed rewards
+        await onUserDataUpdate();
+        await loadClaimedRewards();
+      }
     } catch (error) {
       console.error('Error claiming reward:', error);
       Alert.alert('Error', 'Could not claim reward. Please try again.');
@@ -120,7 +182,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
 
   const handleCreateReward = async (rewardData: Omit<Reward, 'id' | 'created_at'>) => {
     try {
-      await rewardService.createReward(rewardData, currentUser.role);
+      await RewardService.createReward(rewardData, currentUser.role);
 
       Alert.alert('Success', 'Reward created successfully!');
       await loadRewards(); // Reload rewards to show the new one
@@ -133,9 +195,9 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
 
   const handleApproveReward = async (claimId: string, rewardTitle: string) => {
     try {
-      await rewardService.updateRewardClaimStatus(claimId, 'approved');
+      await RewardService.updateRewardClaimStatus(claimId, 'approved');
       Alert.alert('Success', `Reward claim for "${rewardTitle}" approved!`);
-      await loadClaimedRewards();
+      await Promise.all([loadClaimedRewards(), loadPendingRewards()]);
     } catch (error) {
       console.error('Error approving claim:', error);
       Alert.alert('Error', 'Failed to approve the reward claim.');
@@ -144,9 +206,9 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
 
   const handleDenyReward = async (claimId: string, rewardTitle: string) => {
     try {
-      await rewardService.updateRewardClaimStatus(claimId, 'denied');
+      await RewardService.updateRewardClaimStatus(claimId, 'denied');
       Alert.alert('Success', `Reward claim for "${rewardTitle}" denied.`);
-      await loadClaimedRewards();
+      await Promise.all([loadClaimedRewards(), loadPendingRewards()]);
     } catch (error) {
       console.error('Error denying claim:', error);
       Alert.alert('Error', 'Failed to deny the reward claim.');
@@ -161,13 +223,23 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
     return claimedRewards.filter(claim => claim.user_id === selectedUserId);
   };
 
-  const renderReward = ({ item }: { item: Reward }) => (
-    <RewardItem
-      reward={item}
-      userPoints={currentUser.points}
-      onPress={() => handleRewardPress(item)}
-    />
-  );
+  const renderReward = ({ item }: { item: Reward }) => {
+    // Count pending claims for this specific reward by this user
+    const pendingClaimsCount = claimedRewards.filter(claim => 
+      claim.reward_id === item.id && 
+      claim.user_id === currentUser.id && 
+      claim.status === 'pending'
+    ).length;
+
+    return (
+      <RewardItem
+        reward={item}
+        userPoints={currentUser.points}
+        onPress={() => handleRewardPress(item)}
+        pendingClaimsCount={pendingClaimsCount}
+      />
+    );
+  };
 
     const renderClaimedReward = ({ item }: { item: ClaimedRewardWithDetails }) => {
     const getStatusColor = (status: string) => {
@@ -270,7 +342,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
           onPress={() => setActiveTab('available')}
         >
           <Text style={[styles.tabText, activeTab === 'available' && styles.activeTabText]}>
-            Available Rewards
+            Available
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -278,9 +350,19 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
           onPress={() => setActiveTab('claimed')}
         >
           <Text style={[styles.tabText, activeTab === 'claimed' && styles.activeTabText]}>
-            Claimed Rewards
+            Claimed
           </Text>
         </TouchableOpacity>
+        {currentUser.role === 'admin' && (
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'pending' && styles.activeTab]}
+            onPress={() => setActiveTab('pending')}
+          >
+            <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
+              Pending
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* User Filter for Admin (only on claimed tab) */}
@@ -329,7 +411,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
             </View>
           }
         />
-      ) : (
+      ) : activeTab === 'claimed' ? (
         <FlatList
           data={getFilteredClaimedRewards()}
           renderItem={renderClaimedReward}
@@ -345,6 +427,23 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
                   ? 'This user hasn\'t claimed any rewards yet'
                   : 'No one has claimed any rewards yet'
                 }
+              </Text>
+            </View>
+          }
+        />
+      ) : (
+        <FlatList
+          data={pendingRewards}
+          renderItem={renderClaimedReward}
+          keyExtractor={(item) => `pending-${item.id}`}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No pending approvals</Text>
+              <Text style={styles.emptySubtext}>
+                All reward claims have been processed
               </Text>
             </View>
           }

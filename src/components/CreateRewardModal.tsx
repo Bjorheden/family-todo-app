@@ -29,6 +29,7 @@ export function CreateRewardModal({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [pointsRequired, setPointsRequired] = useState('');
+  const [requiresApproval, setRequiresApproval] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -52,6 +53,7 @@ export function CreateRewardModal({
         family_id: familyId,
         created_by: currentUserId,
         is_active: true,
+        requires_approval: requiresApproval,
       };
 
       await onSubmit(rewardData);
@@ -60,6 +62,7 @@ export function CreateRewardModal({
       setTitle('');
       setDescription('');
       setPointsRequired('');
+      setRequiresApproval(false);
       
       onClose();
     } catch (error) {
@@ -73,6 +76,7 @@ export function CreateRewardModal({
     setTitle('');
     setDescription('');
     setPointsRequired('');
+    setRequiresApproval(false);
     onClose();
   };
 
@@ -108,6 +112,18 @@ export function CreateRewardModal({
               placeholder="e.g. 50"
               keyboardType="numeric"
             />
+
+            <TouchableOpacity 
+              style={styles.checkboxContainer}
+              onPress={() => setRequiresApproval(!requiresApproval)}
+            >
+              <View style={[styles.checkbox, requiresApproval && styles.checkboxChecked]}>
+                {requiresApproval && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.checkboxLabel}>
+                Requires admin approval before claiming
+              </Text>
+            </TouchableOpacity>
 
           </ScrollView>
 
@@ -203,5 +219,35 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    borderColor: '#6200EA',
+    backgroundColor: '#6200EA',
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
   },
 });

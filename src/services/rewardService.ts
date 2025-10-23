@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { Reward, RewardClaim } from '../types';
+import { NotificationService } from './notificationService';
 
 export class RewardService {
   // Get all active rewards for a family
@@ -35,8 +36,86 @@ export class RewardService {
     return data;
   }
 
-  // Claim a reward
+  // Create a pending reward claim (for rewards requiring approval)
+  static async createPendingRewardClaim(rewardId: string, userId: string): Promise<void> {
+    // Get reward and user details for notification
+    const { data: rewardData, error: rewardError } = await supabase
+      .from('rewards')
+      .select('title, family_id')
+      .eq('id', rewardId)
+      .single();
+
+    if (rewardError) throw rewardError;
+
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('full_name')
+      .eq('id', userId)
+      .single();
+
+    if (userError) throw userError;
+
+    // Create the pending claim
+    const { error } = await supabase
+      .from('reward_claims')
+      .insert([
+        {
+          user_id: userId,
+          reward_id: rewardId,
+          status: 'pending',
+          claimed_at: new Date().toISOString(),
+        },
+      ]);
+
+    if (error) throw error;
+
+    // Get admin users in the family
+    const { data: adminUsers, error: adminError } = await supabase
+      .from('users')
+      .select('id, full_name')
+      .eq('family_id', rewardData.family_id)
+      .eq('role', 'admin');
+
+    if (adminError) throw adminError;
+
+    // Send notification to all admins
+    if (adminUsers && adminUsers.length > 0) {
+      for (const admin of adminUsers) {
+        try {
+          await NotificationService.notifyAdminRewardClaimed(
+            admin.id,
+            userData.full_name,
+            rewardData.title,
+            true, // requires approval
+            rewardId
+          );
+        } catch (notificationError) {
+          console.error('Error sending notification to admin:', notificationError);
+          // Don't throw here - we don't want to fail the claim if notification fails
+        }
+      }
+    }
+  }
+
+  // Claim a reward (for rewards that don't require approval)
   static async claimReward(rewardId: string, userId: string, pointsRequired: number): Promise<void> {
+    // Get reward and user details for notification
+    const { data: rewardData, error: rewardError } = await supabase
+      .from('rewards')
+      .select('title, family_id')
+      .eq('id', rewardId)
+      .single();
+
+    if (rewardError) throw rewardError;
+
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('full_name')
+      .eq('id', userId)
+      .single();
+
+    if (userError) throw userError;
+
     // Start transaction by creating the claim record
     const { data: claimData, error: claimError } = await supabase
       .from('reward_claims')
@@ -67,6 +146,33 @@ export class RewardService {
         .eq('id', claimData.id);
       
       throw pointsError;
+    }
+
+    // Get admin users in the family
+    const { data: adminUsers, error: adminError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('family_id', rewardData.family_id)
+      .eq('role', 'admin');
+
+    if (adminError) throw adminError;
+
+    // Send notification to all admins
+    if (adminUsers && adminUsers.length > 0) {
+      for (const admin of adminUsers) {
+        try {
+          await NotificationService.notifyAdminRewardClaimed(
+            admin.id,
+            userData.full_name,
+            rewardData.title,
+            false, // doesn't require approval
+            rewardId
+          );
+        } catch (notificationError) {
+          console.error('Error sending notification to admin:', notificationError);
+          // Don't throw here - we don't want to fail the claim if notification fails
+        }
+      }
     }
   }
 
@@ -136,11 +242,37 @@ export class RewardService {
 
   // Update reward claim status (admin only)
   static async updateRewardClaimStatus(claimId: string, status: 'approved' | 'denied'): Promise<RewardClaim> {
+    // First, get the claim details to check if we need to deduct points and for notifications
+    const { data: claimData, error: fetchError } = await supabase
+      .from('reward_claims')
+      .select(`
+        *,
+        reward:rewards(points_required, title)
+      `)
+      .eq('id', claimId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
     const updateData: any = { 
       status,
       processed_at: new Date().toISOString()
     };
 
+    // If approving a pending claim, deduct points
+    if (status === 'approved' && claimData.status === 'pending') {
+      const pointsRequired = (claimData.reward as any).points_required;
+      
+      // Deduct points from user using RPC function
+      const { error: pointsError } = await supabase.rpc('deduct_user_points', {
+        user_id: claimData.user_id,
+        points_to_deduct: pointsRequired
+      });
+
+      if (pointsError) throw pointsError;
+    }
+
+    // Update the claim status
     const { data, error } = await supabase
       .from('reward_claims')
       .update(updateData)
@@ -149,6 +281,28 @@ export class RewardService {
       .single();
 
     if (error) throw error;
+
+    // Send notification to user about the decision
+    const rewardTitle = (claimData.reward as any).title;
+    try {
+      if (status === 'approved') {
+        await NotificationService.notifyUserRewardApproved(
+          claimData.user_id,
+          rewardTitle,
+          claimData.reward_id
+        );
+      } else if (status === 'denied') {
+        await NotificationService.notifyUserRewardDenied(
+          claimData.user_id,
+          rewardTitle,
+          claimData.reward_id
+        );
+      }
+    } catch (notificationError) {
+      console.error('Error sending notification to user:', notificationError);
+      // Don't throw here - we don't want to fail the status update if notification fails
+    }
+
     return data;
   }
 }

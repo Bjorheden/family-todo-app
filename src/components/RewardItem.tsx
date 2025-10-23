@@ -6,10 +6,11 @@ interface RewardItemProps {
   reward: Reward;
   userPoints: number;
   onPress: () => void;
+  pendingClaimsCount?: number;
 }
 
-export const RewardItem: React.FC<RewardItemProps> = ({ reward, userPoints, onPress }) => {
-  const canAfford = userPoints >= reward.points_required;
+export const RewardItem: React.FC<RewardItemProps> = ({ reward, userPoints, onPress, pendingClaimsCount = 0 }) => {
+  const canAfford = userPoints >= reward.points_required || reward.requires_approval;
 
   return (
     <TouchableOpacity 
@@ -26,13 +27,23 @@ export const RewardItem: React.FC<RewardItemProps> = ({ reward, userPoints, onPr
           <Text style={[styles.points, !canAfford && styles.disabledText]}>
             💰 {reward.points_required}
           </Text>
-          {canAfford ? (
-            <Text style={styles.affordable}>Can claim!</Text>
-          ) : (
-            <Text style={styles.notAffordable}>
-              Need 💰 {reward.points_required - userPoints} more
-            </Text>
-          )}
+          <View style={styles.statusContainer}>
+            {reward.requires_approval && (
+              <Text style={styles.requiresApproval}>Requires Approval</Text>
+            )}
+            {pendingClaimsCount > 0 && (
+              <Text style={styles.pendingClaims}>
+                {pendingClaimsCount} Pending
+              </Text>
+            )}
+            {canAfford && pendingClaimsCount === 0 ? (
+              <Text style={styles.affordable}>Can claim!</Text>
+            ) : !canAfford && !reward.requires_approval ? (
+              <Text style={styles.notAffordable}>
+                Need 💰 {reward.points_required - userPoints} more
+              </Text>
+            ) : null}
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -89,5 +100,20 @@ const styles = StyleSheet.create({
   notAffordable: {
     fontSize: 12,
     color: '#F44336',
+  },
+  statusContainer: {
+    alignItems: 'flex-end',
+  },
+  requiresApproval: {
+    fontSize: 10,
+    color: '#FF9800',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  pendingClaims: {
+    fontSize: 10,
+    color: '#2196F3',
+    fontWeight: '600',
+    marginBottom: 2,
   },
 });

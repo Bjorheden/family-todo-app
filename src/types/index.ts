@@ -34,7 +34,7 @@ export interface Task {
   updated_at: string;
 }
 
-// Belöningar
+// Rewards
 export interface Reward {
   id: string;
   title: string;
@@ -43,6 +43,7 @@ export interface Reward {
   family_id: string;
   created_by: string;
   is_active: boolean;
+  requires_approval: boolean;
   created_at: string;
 }
 
