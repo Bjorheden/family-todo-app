@@ -76,7 +76,11 @@ describe('TaskService', () => {
         assigned_to: 'user1',
         created_by: 'admin1',
         points: 10,
-        status: 'pending' as const
+        status: 'pending' as const,
+        description: null,
+        due_date: null,
+        completed_at: null,
+        approved_at: null
       };
 
       const mockCreatedTask = { id: '123', ...mockTask };
@@ -100,7 +104,11 @@ describe('TaskService', () => {
         assigned_to: 'user1',
         created_by: 'user1',
         points: 10,
-        status: 'pending' as const
+        status: 'pending' as const,
+        description: null,
+        due_date: null,
+        completed_at: null,
+        approved_at: null
       };
 
       await expect(taskService.createTask(mockTask, 'member')).rejects.toThrow('Only family admins can create tasks');
@@ -113,7 +121,11 @@ describe('TaskService', () => {
         assigned_to: 'user1',
         created_by: 'user1',
         points: 10,
-        status: 'pending' as const
+        status: 'pending' as const,
+        description: null,
+        due_date: null,
+        completed_at: null,
+        approved_at: null
       };
 
       const mockCreatedTask = { id: '123', ...mockTask };

@@ -72,9 +72,9 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ currentUser, familyMem
     }
   };
 
-  const handleCreateTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'completed_at' | 'approved_at'>) => {
+  const handleCreateTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      await taskService.createTask(taskData, currentUser.role);
+      await taskService.createTask(taskData, currentUser.role ?? 'member');
       loadTasks(); // Reload tasks
       onTaskCreated?.(); // Notify parent to refresh notifications
     } catch (error: any) {

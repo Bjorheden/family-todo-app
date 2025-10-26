@@ -55,20 +55,29 @@ function MainApp() {
 
   const checkAuthStatus = async () => {
     try {
+      console.log('🔍 Starting auth check...');
       const user = await authService.getCurrentUser();
+      console.log('👤 Got user:', user ? 'User found' : 'No user');
       if (user) {
         setCurrentUser(user);
-        await loadFamilyMembers(user.family_id);
+        if (user.family_id) {
+          console.log('👨‍👩‍👧‍👦 Loading family members...');
+          await loadFamilyMembers(user.family_id);
+        }
+        console.log('🔔 Loading notifications...');
         await loadNotificationCount(user.id);
         
         // Load pending approvals count for admins
         if (user.role === 'admin' && user.family_id) {
+          console.log('⚖️ Loading pending approvals...');
           await loadPendingApprovals(user.family_id);
         }
       }
+      console.log('✅ Auth check complete');
     } catch (error) {
-      console.error('Error checking auth status:', error);
+      console.error('❌ Error checking auth status:', error);
     } finally {
+      console.log('🏁 Setting loading to false');
       setLoading(false);
     }
   };
@@ -78,7 +87,9 @@ function MainApp() {
       const user = await authService.getCurrentUser();
       if (user) {
         setCurrentUser(user);
-        await loadFamilyMembers(user.family_id);
+        if (user.family_id) {
+          await loadFamilyMembers(user.family_id);
+        }
         await loadNotificationCount(user.id);
         
         // Load pending approvals count for admins
@@ -157,7 +168,7 @@ function MainApp() {
     }
   };
 
-  const loadFamilyMembers = async (familyId?: string) => {
+  const loadFamilyMembers = async (familyId: string | null) => {
     if (!familyId) return;
 
     try {

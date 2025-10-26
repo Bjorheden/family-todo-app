@@ -55,7 +55,9 @@ export class TaskService {
 
     // Create notification for the assigned user
     try {
-      await this.createTaskNotification(task.assigned_to, data.id, 'task_assigned');
+      if (task.assigned_to) {
+        await this.createTaskNotification(task.assigned_to, data.id, 'task_assigned');
+      }
     } catch (error) {
       console.error('Failed to create task assignment notification:', error);
     }
@@ -88,13 +90,17 @@ export class TaskService {
 
     // If task is marked as completed, notify admin
     if (status === 'completed') {
-      await this.createTaskNotification(data.created_by, taskId, 'task_completed');
+      if (data.created_by) {
+        await this.createTaskNotification(data.created_by, taskId, 'task_completed');
+      }
     }
 
     // If task is approved by admin, add points to user
     if (status === 'approved') {
-      await this.addPointsToUser(data.assigned_to, data.points);
-      await this.createTaskNotification(data.assigned_to, taskId, 'task_approved');
+      if (data.assigned_to) {
+        await this.addPointsToUser(data.assigned_to, data.points);
+        await this.createTaskNotification(data.assigned_to, taskId, 'task_approved');
+      }
     }
 
     return data;
@@ -134,7 +140,8 @@ export class TaskService {
       message: messages[type],
       type,
       is_read: false,
-      related_task_id: taskId
+      related_task_id: taskId,
+      related_reward_id: null
     };
 
     const { data, error } = await supabase

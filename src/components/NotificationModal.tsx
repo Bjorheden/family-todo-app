@@ -72,7 +72,7 @@ export function NotificationModal({
               </View>
               <Text style={styles.notificationMessage}>{item.message}</Text>
               <Text style={styles.notificationDate}>
-                {`${new Date(item.created_at).toLocaleDateString()} ${new Date(item.created_at).toLocaleTimeString()}`}
+                {item.created_at ? `${new Date(item.created_at).toLocaleDateString()} ${new Date(item.created_at).toLocaleTimeString()}` : 'Unknown time'}
               </Text>
               {!item.is_read && (
                 <Text style={styles.tapToRead}>Tap to mark as read</Text>

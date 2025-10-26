@@ -110,7 +110,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
       claim.status === 'pending'
     );
 
-    if (currentUser.points >= reward.points_required || reward.requires_approval) {
+    if ((currentUser.points ?? 0) >= reward.points_required || reward.requires_approval) {
       let message = `Do you want to claim "${reward.title}" for 💰 ${reward.points_required}?`;
       
       if (reward.requires_approval) {
@@ -132,7 +132,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
     } else {
       Alert.alert(
         'Not Enough Points',
-        `You need 💰 ${reward.points_required - currentUser.points} more to claim this reward.`
+        `You need 💰 ${reward.points_required - (currentUser.points ?? 0)} more to claim this reward.`
       );
     }
   };
@@ -182,7 +182,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
 
   const handleCreateReward = async (rewardData: Omit<Reward, 'id' | 'created_at'>) => {
     try {
-      await RewardService.createReward(rewardData, currentUser.role);
+      await RewardService.createReward(rewardData, currentUser.role ?? 'member');
 
       Alert.alert('Success', 'Reward created successfully!');
       await loadRewards(); // Reload rewards to show the new one
@@ -234,7 +234,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
     return (
       <RewardItem
         reward={item}
-        userPoints={currentUser.points}
+        userPoints={currentUser.points ?? 0}
         onPress={() => handleRewardPress(item)}
         pendingClaimsCount={pendingClaimsCount}
       />
@@ -269,9 +269,9 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
               <Text style={styles.claimedRewardUser}>By: {item.user.full_name}</Text>
             )}
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) || '#757575' }]}>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status ?? 'pending') || '#757575' }]}>
             <Text style={styles.statusText}>
-              {getStatusText(item.status) || 'Unknown'}
+              {getStatusText(item.status ?? 'pending') || 'Unknown'}
             </Text>
           </View>
         </View>
@@ -282,7 +282,7 @@ export const RewardsScreen: React.FC<RewardsScreenProps> = ({
         
           <Text style={styles.claimedRewardPoints}>💰 {item.reward.points_required}</Text>
           <Text style={styles.claimedRewardDate}>
-            Claimed: {new Date(item.claimed_at).toLocaleDateString()}
+            Claimed: {item.claimed_at ? new Date(item.claimed_at).toLocaleDateString() : 'Unknown'}
           </Text>
 
         {currentUser.role === 'admin' && item.status === 'pending' && (

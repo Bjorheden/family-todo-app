@@ -146,7 +146,7 @@ export function TaskDetailsModal({
           <View style={styles.section}>
             <Text style={styles.label}>Timeline</Text>
             <Text style={styles.timestamp}>
-              Created: {new Date(task.created_at).toLocaleString()}
+              Created: {task.created_at ? new Date(task.created_at).toLocaleString() : 'Unknown'}
             </Text>
             {task.completed_at && (
               <Text style={styles.timestamp}>

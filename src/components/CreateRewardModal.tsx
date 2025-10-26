@@ -48,7 +48,7 @@ export function CreateRewardModal({
       
       const rewardData: Omit<Reward, 'id' | 'created_at'> = {
         title: title.trim(),
-        description: description.trim() || undefined,
+        description: description.trim() || null,
         points_required: Number(pointsRequired),
         family_id: familyId,
         created_by: currentUserId,

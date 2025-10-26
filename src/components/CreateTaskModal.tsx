@@ -16,7 +16,7 @@ import { Task, User } from '../types';
 interface CreateTaskModalProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (task: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'completed_at' | 'approved_at'>) => void;
+  onSubmit: (task: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => void;
   familyMembers: User[];
   currentUserId: string;
   familyId: string;
@@ -43,15 +43,17 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       return;
     }
 
-    const task: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'completed_at' | 'approved_at'> = {
+    const task: Omit<Task, 'id' | 'created_at' | 'updated_at'> = {
       title: title.trim(),
-      description: description.trim() || undefined,
+      description: description.trim() || null,
       points: parseInt(points, 10),
       assigned_to: assignedTo,
       created_by: currentUserId,
       family_id: familyId,
       status: 'pending',
-      due_date: dueDate ? dueDate.toISOString().split('T')[0] : undefined,
+      due_date: dueDate ? dueDate.toISOString().split('T')[0] : null,
+      completed_at: null,
+      approved_at: null,
     };
 
     onSubmit(task);

@@ -73,7 +73,7 @@ export class RewardService {
     const { data: adminUsers, error: adminError } = await supabase
       .from('users')
       .select('id, full_name')
-      .eq('family_id', rewardData.family_id)
+      .eq('family_id', rewardData.family_id!)
       .eq('role', 'admin');
 
     if (adminError) throw adminError;
@@ -152,7 +152,7 @@ export class RewardService {
     const { data: adminUsers, error: adminError } = await supabase
       .from('users')
       .select('id')
-      .eq('family_id', rewardData.family_id)
+      .eq('family_id', rewardData.family_id!)
       .eq('role', 'admin');
 
     if (adminError) throw adminError;
@@ -221,7 +221,7 @@ export class RewardService {
       .order('claimed_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as (RewardClaim & { reward: Reward; user: { full_name: string } })[];
   }
 
   // Get all reward claims for a family (admin only)
@@ -237,7 +237,7 @@ export class RewardService {
       .order('claimed_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as (RewardClaim & { reward: Reward; user: { full_name: string } })[];
   }
 
   // Update reward claim status (admin only)
@@ -265,7 +265,7 @@ export class RewardService {
       
       // Deduct points from user using RPC function
       const { error: pointsError } = await supabase.rpc('deduct_user_points', {
-        user_id: claimData.user_id,
+        user_id: claimData.user_id!,
         points_to_deduct: pointsRequired
       });
 
@@ -287,15 +287,15 @@ export class RewardService {
     try {
       if (status === 'approved') {
         await NotificationService.notifyUserRewardApproved(
-          claimData.user_id,
+          claimData.user_id!,
           rewardTitle,
-          claimData.reward_id
+          claimData.reward_id!
         );
       } else if (status === 'denied') {
         await NotificationService.notifyUserRewardDenied(
-          claimData.user_id,
+          claimData.user_id!,
           rewardTitle,
-          claimData.reward_id
+          claimData.reward_id!
         );
       }
     } catch (notificationError) {

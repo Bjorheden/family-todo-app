@@ -61,7 +61,6 @@ export class AuthService {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     
     if (!authUser) {
-      console.log('No auth user found');
       return null;
     }
 
@@ -70,12 +69,6 @@ export class AuthService {
       .select('*')
       .eq('id', authUser.id)
       .single();
-    
-    if (error) {
-      console.log('Error code:', error.code);
-      console.log('Error message:', error.message);
-      console.log('Error details:', error.details);
-    }
     
     if (error) return null;
     return data;
